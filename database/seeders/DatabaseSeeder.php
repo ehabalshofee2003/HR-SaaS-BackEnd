@@ -15,6 +15,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('local')) {
+            $this->call([
+                DevTestDataSeeder::class,
+            ]);
+        }
          // 1. إنشاء المستخدم المالك أولاً
     $owner = \App\Models\Identity\User::create([
         
