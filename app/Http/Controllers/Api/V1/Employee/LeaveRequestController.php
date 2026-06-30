@@ -11,6 +11,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Identity\User;
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\Employee\LeaveBalanceResource;
 
 class LeaveRequestController extends Controller
 {
@@ -78,5 +79,22 @@ class LeaveRequestController extends Controller
         }
 
         return new LeaveRequestResource($leaveRequest);
+    }
+        public function balance(): JsonResponse
+    {
+        $result = $this->leaveRequestService->getBalance();
+        return response()->json([
+            'data' => LeaveBalanceResource::collection($result['data'])
+        ]);
+    }
+    public function cancel($id): JsonResponse
+    {
+        $result = $this->leaveRequestService->cancelRequest($id);
+
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], $result['code']);
+        }
+
+        return response()->json(['message' => $result['message']]);
     }
 }

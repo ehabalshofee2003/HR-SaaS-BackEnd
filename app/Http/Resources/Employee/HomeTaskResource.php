@@ -21,6 +21,9 @@ class HomeTaskResource extends JsonResource
             'completed_at' => $this->completed_at
                 ? Carbon::parse($this->completed_at)->format('Y-m-d H:i:s')
                 : null,
+            'is_overdue' => in_array($this->status, ['pending', 'in_progress']) 
+                && $this->due_date 
+                && Carbon::parse($this->due_date)->lt(now()),
         ];
     }
 }

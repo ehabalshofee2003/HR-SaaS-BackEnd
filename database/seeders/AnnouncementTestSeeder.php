@@ -11,23 +11,20 @@ class AnnouncementTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $testUserId = 3; // <-- نفس ID الموظف
-        $user = User::find($testUserId);
-        $companyId = $user->getCurrentCompanyId();
-        $branchId = $user->employeeDetail?->department?->branch_id;
-        $departmentId = $user->employeeDetail?->department_id;
-
-        if (!$companyId) {
-            $this->command->error("المستخدم ليس لديه تسلسل هرمي!");
+        $user = User::where('phone', '0791234567')->first();
+        if (!$user) {
+            $this->command->error("المستخدم التجريبي غير موجود!");
             return;
         }
 
-        // 1. إعلان لكل الشركة (يجب أن يراه الموظف)
+        $companyId = $user->getCurrentCompanyId();
+        $supervisor = User::where('phone', '0799999999')->first();
+
         Announcement::firstOrCreate(
-            ['company_id' => $companyId, 'target_type' => 'all', 'title' => 'إعلان عام للاختبار'],
+            ['company_id' => $companyId, 'target_type' => 'all', 'title' => 'إعلان هام: توزيع الحوافز'],
             [
-                'created_by' => 1, // ضع ID المدير
-                'content' => 'هذا محتوى الإعلان العام الذي يخص جميع الموظفين في الشركة.',
+                'created_by' => $supervisor ? $supervisor->id : $user->id,
+                'content' => 'تم اعتماد حوافز نهاية الشهر لجميع موظفي الفرع الرئيسي. يرجى مراجعة كشوف الرواتب.',
                 'target_id' => null,
                 'start_date' => Carbon::today()->toDateString(),
                 'end_date' => Carbon::today()->addDays(7)->toDateString(),
@@ -35,19 +32,6 @@ class AnnouncementTestSeeder extends Seeder
             ]
         );
 
-        // 2. إعلان لفرع آخر (يجب ألا يراه الموظف - لاختبار الأمان)
-        Announcement::firstOrCreate(
-            ['company_id' => $companyId, 'target_type' => 'branch', 'title' => 'إعلان فرع وهمي'],
-            [
-                'created_by' => 1,
-                'content' => 'محتوى يجب ألا يراه الموظف.',
-                'target_id' => 99999, // فرع وهمي
-                'start_date' => Carbon::today()->toDateString(),
-                'end_date' => Carbon::today()->addDays(7)->toDateString(),
-                'is_active' => true,
-            ]
-        );
-
-        $this->command->info("✅ تم إنشاء إعلانات اختبار (واحد مرئي وواحد مخفي)!");
+        $this->command->info("✅ تم إنشاء بيانات الإعلانات بنجاح!");
     }
 }

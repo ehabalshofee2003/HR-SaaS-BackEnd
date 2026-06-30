@@ -1,22 +1,42 @@
 <?php
+
 namespace App\Models\Hr;
 
-use App\Models\BaseModel;
-use App\Models\Identity\User;
-use App\Models\Organization\Branch;
-use App\Models\Organization\Company;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Workshop extends BaseModel
+class Workshop extends Model
 {
-    protected $table = 'workshops';
+    use SoftDeletes;
+
     protected $fillable = [
         'company_id', 'branch_id', 'created_by', 'title', 'description',
         'location', 'start_date', 'end_date', 'capacity', 'status'
     ];
-    protected $casts = ['start_date' => 'datetime', 'end_date' => 'datetime'];
 
-    public function company() { return $this->belongsTo(Company::class, 'company_id'); }
-    public function branch() { return $this->belongsTo(Branch::class, 'branch_id'); }
-    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
-    public function attendees() { return $this->hasMany(WorkshopAttendee::class, 'workshop_id'); }
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date'   => 'datetime',
+        'capacity'   => 'integer',
+    ];
+
+    public function company()
+    {
+        return $this->belongsTo(\App\Models\Organization\Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Organization\Branch::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Models\Identity\User::class, 'created_by');
+    }
+
+    public function attendees()
+    {
+        return $this->hasMany(WorkshopAttendee::class, 'workshop_id');
+    }
 }

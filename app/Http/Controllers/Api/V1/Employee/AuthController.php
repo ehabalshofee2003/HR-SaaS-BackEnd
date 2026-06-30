@@ -52,4 +52,5 @@ class AuthController extends Controller
             'data' => new ProfileResource($user)
         ]);
     }
+    
 }

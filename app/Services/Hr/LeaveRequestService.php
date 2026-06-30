@@ -2,7 +2,10 @@
 
 namespace App\Services\Hr;
 
+use App\Models\Identity\User;
 use App\Repositories\Hr\LeaveRequestRepository;
+use App\Repositories\Hr\LeaveBalanceRepository;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Hr\LeaveRequest;
@@ -10,16 +13,21 @@ use Exception;
 
 class LeaveRequestService
 {
-    public function __construct(private LeaveRequestRepository $repository) {}
+    public function __construct(
+        private LeaveRequestRepository $leaveRequestRepository,
+        private LeaveBalanceRepository $leaveBalanceRepository
+    ) {}
 
     public function getMyLeaveRequests(int $employeeId, int $perPage)
     {
-        return $this->repository->getEmployeeLeaveRequests($employeeId, $perPage);
+        // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
+        return $this->leaveRequestRepository->getEmployeeLeaveRequests($employeeId, $perPage);
     }
 
     public function getMyLeaveRequestById(int $employeeId, int $leaveRequestId): ?LeaveRequest
     {
-        return $this->repository->findEmployeeLeaveRequest($employeeId, $leaveRequestId);
+        // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
+        return $this->leaveRequestRepository->findEmployeeLeaveRequest($employeeId, $leaveRequestId);
     }
 
     public function submitLeaveRequest(int $employeeId, array $data, $file = null): LeaveRequest
@@ -38,7 +46,8 @@ class LeaveRequestService
             $data['status'] = 'pending'; // الحالة الافتراضية
             $data['attachment'] = $attachmentPath;
 
-            $leaveRequest = $this->repository->create($data);
+            // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
+            $leaveRequest = $this->leaveRequestRepository->create($data);
 
             DB::commit();
             return $leaveRequest;
@@ -53,5 +62,54 @@ class LeaveRequestService
 
             throw $e; // إعادة رمي الخطأ للـ Controller ليقوم بالتعامل معه
         }
+    }
+    
+    // 1. دالة جلب الرصيد
+    public function getBalance()
+    {
+        $user = $this->getAuthenticatedUser();
+        $balances = $this->leaveBalanceRepository->getEmployeeCurrentYearBalances($user->id);
+        
+        return [
+            'success' => true,
+            'code' => 200,
+            'data' => $balances
+        ];
+    }
+
+    // 2. دالة إلغاء الطلب
+    public function cancelRequest($id)
+    {
+        $user = $this->getAuthenticatedUser();
+        
+        $request = $this->leaveRequestRepository->findPendingRequestById((int) $id, $user->id);
+
+        if (!$request) {
+            return [
+                'success' => false,
+                'message' => 'Leave request not found or cannot be cancelled.',
+                'code' => 404
+            ];
+        }
+
+        $request->update(['status' => 'cancelled']);
+
+        return [
+            'success' => true,
+            'message' => 'Leave request cancelled successfully.',
+            'code' => 200
+        ];
+    }
+
+    /**
+     * قاعدة Auth Type Hinting الصارمة
+     */
+    private function getAuthenticatedUser(): User
+    {
+        $user = User::find(Auth::id());
+        if (!$user) {
+            abort(401, 'Unauthorized');
+        }
+        return $user;
     }
 }

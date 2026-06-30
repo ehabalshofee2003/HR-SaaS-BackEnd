@@ -9,6 +9,11 @@ use App\Models\Identity\User; // <-- إضافة الاستدعاء
 use App\Services\Hr\ProfileService;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Employee\ChangePasswordRequest;
+use App\Http\Requests\Employee\ChangePhoneRequest;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
@@ -65,5 +70,21 @@ class ProfileController extends Controller
                 'message' => 'Failed to update profile. Please check your connection.',
             ], 500);
         }
+    }
+        public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $result = $this->profileService->changePassword($request->validated());
+        return response()->json(['message' => $result['message']], $result['code']);
+    }
+
+    public function changePhone(ChangePhoneRequest $request): JsonResponse
+    {
+        $result = $this->profileService->changePhone($request->validated());
+        return response()->json(['message' => $result['message']], $result['code']);
+    }
+    public function logout(Request $request): JsonResponse
+    {
+        $result = $this->profileService->logout($request);
+        return response()->json(['message' => $result['message']], $result['code']);
     }
 }

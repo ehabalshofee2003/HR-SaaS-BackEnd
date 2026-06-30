@@ -1,16 +1,33 @@
 <?php
+
 namespace App\Models\Support;
 
-use App\Models\BaseModel;
-use App\Models\Identity\User;
-use App\Models\Organization\Company;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Notification extends BaseModel
+class Notification extends Model
 {
-    protected $table = 'notifications';
-    protected $fillable = ['company_id', 'user_id', 'title', 'body', 'type', 'is_read', 'data'];
-    protected $casts = ['is_read' => 'boolean', 'data' => 'json'];
+    use SoftDeletes;
 
-    public function company() { return $this->belongsTo(Company::class, 'company_id'); }
-    public function user() { return $this->belongsTo(User::class, 'user_id'); }
+    // تحديد اسم الجدول صراحةً (رغم أنه سيكون الافتراضي)
+    protected $table = 'notifications'; 
+
+    protected $fillable = [
+        'company_id', 'user_id', 'title', 'body', 'type', 'is_read', 'data'
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'data'    => 'array',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\Identity\User::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(\App\Models\Organization\Company::class);
+    }
 }

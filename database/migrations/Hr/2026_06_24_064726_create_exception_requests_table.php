@@ -16,8 +16,7 @@ return new class extends Migration
             
             // ربط بالشركة والموظف
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            
+            $table->foreignId('employee_id')->constrained('employee_details')->cascadeOnDelete();            
             // نوع الاستثناء (مثال: overtime, late_arrival, early_departure, holiday_work)
             // نفترض وجود جدول exception_types كما هو معتاد في أنظمة SaaS
             $table->foreignId('exception_type_id')->constrained()->restrictOnDelete();

@@ -1,15 +1,22 @@
 <?php
+
 namespace App\Models\Hr;
 
-use App\Models\BaseModel;
-use App\Models\Organization\Company;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class EvaluationCriteria extends BaseModel
+class EvaluationCriteria extends Model
 {
-    protected $table = 'evaluation_criteria';
-    protected $fillable = ['company_id', 'name', 'description', 'weight', 'is_active'];
-    protected $casts = ['is_active' => 'boolean'];
+    use SoftDeletes;
 
-    public function company() { return $this->belongsTo(Company::class, 'company_id'); }
-    public function scores() { return $this->hasMany(EvaluationScore::class, 'criteria_id'); }
+    protected $table = 'evaluation_criteria';
+
+    protected $fillable = [
+        'company_id', 'name', 'description', 'weight', 'is_active'
+    ];
+
+    protected $casts = [
+        'weight' => 'decimal:2',
+        'is_active' => 'boolean',
+    ];
 }

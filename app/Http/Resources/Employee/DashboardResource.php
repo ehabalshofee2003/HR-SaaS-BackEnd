@@ -23,16 +23,18 @@ class DashboardResource extends JsonResource
             ] : null,
 
             'tasks_summary' => [
-                'pending_count' => $this->resource['pending_tasks_count'],
-                'overdue_count' => $this->resource['overdue_tasks_count'],
+                'pending_count' => (int) $this->resource['pending_tasks_count'],
+                'overdue_count' => (int) $this->resource['overdue_tasks_count'],
             ],
 
-            'annual_leave_balance' => $this->resource['annual_leave_balance'],
+            // تم إضافة (float) لمنع ظهورها كنص وبأصفار زائدة
+            'annual_leave_balance' => (float) $this->resource['annual_leave_balance'],
 
             'latest_payslip' => $payslip ? [
                 'month'      => $payslip->period->month,
                 'year'       => $payslip->period->year,
-                'net_salary' => $payslip->net_salary,
+                // تم إضافة (float) هنا أيضاً
+                'net_salary' => (float) $payslip->net_salary,
                 'status'     => $payslip->status,
             ] : null,
 

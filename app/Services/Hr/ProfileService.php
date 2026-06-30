@@ -8,6 +8,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Exception;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class ProfileService
 {
@@ -82,4 +85,47 @@ public function updateProfile(User $user, array $validated, $avatar = null): Use
     
     return $user;
 }
+    public function changePassword(array $data)
+    {
+        $user = $this->getAuthenticatedUser();
+
+        if (!Hash::check($data['old_password'], $user->password_hash)) {
+            return ['success' => false, 'message' => 'Old password is incorrect.', 'code' => 400];
+        }
+
+        $user->update(['password_hash' => Hash::make($data['new_password'])]);
+        return ['success' => true, 'message' => 'Password changed successfully.', 'code' => 200];
+    }
+
+    public function changePhone(array $data)
+    {
+        $user = $this->getAuthenticatedUser();
+        $user->update(['phone' => $data['phone']]);
+        return ['success' => true, 'message' => 'Phone changed successfully.', 'code' => 200];
+    }
+        private function getAuthenticatedUser(): User
+    {
+        $user = User::find(Auth::id());
+        if (!$user) {
+            abort(401, 'Unauthorized');
+        }
+        return $user;
+    }
+        public function logout(Request $request)
+    {
+        $user = $this->getAuthenticatedUser();
+        
+        // استخراج ID التوكن الحالي من الـ Bearer Token بشكل آمن
+        $tokenId = explode('|', $request->bearerToken() ?? '')[0];
+        
+        if ($tokenId) {
+            $user->tokens()->where('id', $tokenId)->delete();
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Logged out successfully.',
+            'code' => 200
+        ];
+    }
 }

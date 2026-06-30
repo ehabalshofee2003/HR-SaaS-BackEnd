@@ -11,20 +11,16 @@ class ResignationTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $testUserId = 3; // <-- نفس ID الموظف
-        $user = User::find($testUserId);
+        $user = User::where('phone', '0791234567')->first();
+        $supervisor = User::where('phone', '0799999999')->first();
 
-        // نحتاج ID أي مشرف موجود في النظام (غالباً صاحب الشركة أو مدير فرع)
-        // سنأخذ أول مستخدم آخر غير الموظف كـ مشرف وهمي للاختبار
-        $supervisor = User::where('id', '!=', $testUserId)->first();
-
-        if (!$supervisor) {
-            $this->command->error("لا يوجد مستخدم آخر ليكون مشرفاً!");
+        if (!$user || !$supervisor) {
+            $this->command->error("المستخدم التجريبي أو المشرف غير موجود!");
             return;
         }
 
         Resignation::firstOrCreate(
-            ['employee_user_id' => $testUserId, 'status' => 'pending'],
+            ['employee_user_id' => $user->id, 'status' => 'pending'],
             [
                 'supervisor_user_id' => $supervisor->id,
                 'reason' => 'اختبار طلب استقالة من النظام',
@@ -33,6 +29,6 @@ class ResignationTestSeeder extends Seeder
             ]
         );
 
-        $this->command->info("✅ تم إنشاء طلب استقالة اختبار (Pending)!");
+        $this->command->info("✅ تم إنشاء طلب الاستقالة الاختباري بنجاح!");
     }
 }

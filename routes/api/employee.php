@@ -11,6 +11,11 @@ use App\Http\Controllers\Api\V1\Employee\DashboardController;
 use App\Http\Controllers\Api\V1\Employee\PayrollController;
 use App\Http\Controllers\Api\V1\Employee\ResignationController;
 use App\Http\Controllers\Api\V1\Employee\AnnouncementController;
+use App\Http\Controllers\Api\V1\Employee\ExceptionRequestController;
+use App\Http\Controllers\Api\V1\Employee\WorkshopController;
+use App\Http\Controllers\Api\V1\Employee\EvaluationController;
+use App\Http\Controllers\Api\V1\Employee\NotificationController;
+
 /*
 |--------------------------------------------------------------------------
 | Employee API Routes
@@ -36,6 +41,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
+    Route::post('change-password', [ProfileController::class, 'changePassword']);
+    Route::post('change-phone', [ProfileController::class, 'changePhone']); 
+    Route::post('logout', [ProfileController::class, 'logout']);
 
     // ==========================================
     // Dashboard (لوحة التحكم)
@@ -55,11 +63,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // Epic 3: Leave Requests (طلبات الإجازات) - مكتمل
     // ==========================================
-    Route::prefix('leave-requests')->controller(LeaveRequestController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::get('{id}', 'show');
-    });
+    Route::get('leave-requests/balance', [LeaveRequestController::class, 'balance']); // فوق
+    Route::post('leave-requests', [LeaveRequestController::class, 'store']); // موجود مسبقاً
+    Route::get('leave-requests', [LeaveRequestController::class, 'index']); // موجود مسبقاً
+    Route::put('leave-requests/{id}/cancel', [LeaveRequestController::class, 'cancel']);
+    Route::get('leave-requests/{id}', [LeaveRequestController::class, 'show']); // موجود مسبقاً
 
     // ==========================================
     // Epic 4: Complaints (الشكاوى) - قيد التنفيذ
@@ -79,19 +87,37 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // Epic 5: Exception Requests (طلبات الاستثناء) - قيد التنفيذ
     // ==========================================
-    // Route::post('exception-requests', [ExceptionRequestController::class, 'store']);
-    // Route::get('exception-requests', [ExceptionRequestController::class, 'index']);
+    Route::prefix('exception-requests')->group(function () {
+        Route::get('/', [ExceptionRequestController::class, 'index']);
+        Route::post('/', [ExceptionRequestController::class, 'store']);
+        Route::get('/{id}', [ExceptionRequestController::class, 'show']);
+        Route::patch('/{id}/cancel', [ExceptionRequestController::class, 'cancel']);
+    });
 
     // ==========================================
     // Epic 6: Evaluations (التقييمات) - قيد التنفيذ
     // ==========================================
-    // Route::get('evaluations', [EvaluationController::class, 'index']);
 
+    Route::prefix('evaluations')->group(function () {
+        Route::get('/', [EvaluationController::class, 'index']);
+        Route::get('/{id}', [EvaluationController::class, 'show']);
+        Route::patch('/{id}/mark-read', [EvaluationController::class, 'markRead']);
+    });
     // ==========================================
     // Epic 7: Workshops (ورش العمل) - قيد التنفيذ
     // ==========================================
-    // Route::get('workshops', [WorkshopController::class, 'index']);
-    // Route::post('workshops/{id}/register', [WorkshopController::class, 'register']);
+
+    Route::prefix('workshops')->group(function () {
+        // الورش العامة المتاحة
+        Route::get('/', [WorkshopController::class, 'index']);
+        Route::get('/{id}', [WorkshopController::class, 'show']);
+        Route::post('/{id}/register', [WorkshopController::class, 'register']);
+        Route::post('/{id}/unregister', [WorkshopController::class, 'unregister']);
+        
+        // ورشي أنا (المسجل بها)
+        Route::get('/my', [WorkshopController::class, 'myWorkshops']);
+        Route::get('/my/{id}', [WorkshopController::class, 'myWorkshopShow']);
+    });
 
     // ==========================================
     // Epic 8: Support Tickets (تذاكر الدعم) - قيد التنفيذ
@@ -126,6 +152,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // Epic 11: Notifications (الإشعارات) - قيد التنفيذ
     // ==========================================
-    // Route::get('notifications', [NotificationController::class, 'index']);
+
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::patch('/mark-all-read', [NotificationController::class, 'markAllRead']); // فوق الـ {id}
+        Route::patch('/{id}/mark-read', [NotificationController::class, 'markRead']);
+    });    
+ 
     
 });
