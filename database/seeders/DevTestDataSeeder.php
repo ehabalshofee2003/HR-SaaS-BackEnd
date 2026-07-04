@@ -15,6 +15,8 @@ class DevTestDataSeeder extends Seeder
             ResignationTestSeeder::class,
             AnnouncementTestSeeder::class,
             HrEpicTestSeeder::class, 
+            TaskTestSeeder::class, // أضف هذا السطر
+
 
         ]);
 
