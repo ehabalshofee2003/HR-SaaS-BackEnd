@@ -69,7 +69,9 @@ class AuthService
 
     public function logout(User $user): void
     {
-        $user->currentAccessToken()->delete();
+        /** @var \Laravel\Sanctum\PersonalAccessToken $token */
+        $token = $user->currentAccessToken();
+        $token?->delete();
 
         DB::table('audit_logs')->insert([
             'user_id' => $user->id,
