@@ -41,4 +41,8 @@ class EmployeeDetail extends Model
         // ملاحظة: مسار الموديل هو Organization وليس Hr
         return $this->belongsTo(Department::class, 'department_id');
     }
+public function supervisor()
+{
+    return $this->belongsTo(\App\Models\Identity\User::class, 'supervisor_id');
+}
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Hr\LeaveRequest;
+use Carbon\Carbon;
 use Exception;
 
 class LeaveRequestService
@@ -18,15 +19,115 @@ class LeaveRequestService
         private LeaveBalanceRepository $leaveBalanceRepository
     ) {}
 
+    // ================= دوال Branch Manager (جديدة) =================
+
+    public function list(User $manager, array $filters)
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->leaveRequestRepository->paginateForBranch($branchId, $filters);
+    }
+
+    public function getDetails(int $id, User $manager): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $request = $this->leaveRequestRepository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('طلب الإجازة غير موجود.', 404);
+        }
+
+        return $request;
+    }
+
+    public function approve(int $id, User $manager, ?string $note): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $companyId = $manager->getCurrentCompanyId();
+        $request = $this->leaveRequestRepository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('طلب الإجازة غير موجود.', 404);
+        }
+
+        if ($request->status !== 'pending_manager') {
+            throw new Exception('لا يمكن الموافقة إلا على طلبات محالة لمدير الفرع.');
+        }
+
+        $leaveType = $this->leaveRequestRepository->getLeaveTypeInfo($request->leave_type_id);
+        $days = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
+
+        return DB::transaction(function () use ($id, $request, $manager, $note, $companyId, $leaveType, $days, $branchId) {
+
+            // خصم الرصيد فقط إذا لم تكن الإجازة Unpaid
+            if ($leaveType && $leaveType->code !== 'unpaid') {
+                $policy = $this->leaveRequestRepository->getPolicyForLeaveType($companyId, $leaveType->code);
+
+                if ($policy) {
+                    $year = Carbon::parse($request->start_date)->year;
+                    $balance = $this->leaveBalanceRepository->findBalance($request->employee_id, $policy->id, $year);
+
+                    if ($balance && $balance->remaining_days < $days) {
+                        throw new Exception('لا يمكن الموافقة — الإجازة تتجاوز الرصيد المتبقي للموظف.');
+                    }
+
+                    if ($balance) {
+                        $this->leaveBalanceRepository->deductDays($balance->id, $days);
+                    }
+                }
+            }
+
+            $this->leaveRequestRepository->updateStatus($id, [
+                'status' => 'approved',
+                'approver_id' => $manager->id,
+                'approved_at' => Carbon::now(),
+            ]);
+
+            // TODO: إشعار الموظف بالموافقة
+
+            return $this->leaveRequestRepository->findForBranch($id, $branchId);
+        });
+    }
+
+    public function reject(int $id, User $manager, string $reason): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $request = $this->leaveRequestRepository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('طلب الإجازة غير موجود.', 404);
+        }
+
+        if ($request->status !== 'pending_manager') {
+            throw new Exception('لا يمكن الرفض إلا لطلبات محالة لمدير الفرع.');
+        }
+
+        $this->leaveRequestRepository->updateStatus($id, [
+            'status' => 'rejected',
+            'approver_id' => $manager->id,
+            'approved_at' => Carbon::now(),
+            'rejection_reason' => $reason,
+        ]);
+
+        // TODO: إشعار الموظف بالرفض
+
+        return $this->leaveRequestRepository->findForBranch($id, $branchId);
+    }
+
+    public function getEmployeeBalances(int $employeeUserId, User $manager): array
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->leaveBalanceRepository->getForEmployeeInBranch($employeeUserId, $branchId);
+    }
+
+    // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
+
     public function getMyLeaveRequests(int $employeeId, int $perPage)
     {
-        // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
         return $this->leaveRequestRepository->getEmployeeLeaveRequests($employeeId, $perPage);
     }
 
     public function getMyLeaveRequestById(int $employeeId, int $leaveRequestId): ?LeaveRequest
     {
-        // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
         return $this->leaveRequestRepository->findEmployeeLeaveRequest($employeeId, $leaveRequestId);
     }
 
@@ -34,19 +135,16 @@ class LeaveRequestService
     {
         $attachmentPath = null;
 
-        // 1. رفع الملف خارج الـ Transaction (Resilience Pattern)
         if ($file) {
             $attachmentPath = $file->store('leave_attachments/' . $employeeId, 'public');
         }
 
-        // 2. بدء Transaction لقاعدة البيانات
         DB::beginTransaction();
         try {
             $data['employee_id'] = $employeeId;
-            $data['status'] = 'pending'; // الحالة الافتراضية
+            $data['status'] = 'pending';
             $data['attachment'] = $attachmentPath;
 
-            // تم تصحيح الخطأ هنا: repository -> leaveRequestRepository
             $leaveRequest = $this->leaveRequestRepository->create($data);
 
             DB::commit();
@@ -55,21 +153,19 @@ class LeaveRequestService
         } catch (Exception $e) {
             DB::rollBack();
 
-            // 3. Compensating Action: حذف الملف إذا فشلت قاعدة البيانات
             if ($attachmentPath) {
                 Storage::disk('public')->delete($attachmentPath);
             }
 
-            throw $e; // إعادة رمي الخطأ للـ Controller ليقوم بالتعامل معه
+            throw $e;
         }
     }
-    
-    // 1. دالة جلب الرصيد
+
     public function getBalance()
     {
         $user = $this->getAuthenticatedUser();
         $balances = $this->leaveBalanceRepository->getEmployeeCurrentYearBalances($user->id);
-        
+
         return [
             'success' => true,
             'code' => 200,
@@ -77,11 +173,10 @@ class LeaveRequestService
         ];
     }
 
-    // 2. دالة إلغاء الطلب
     public function cancelRequest($id)
     {
         $user = $this->getAuthenticatedUser();
-        
+
         $request = $this->leaveRequestRepository->findPendingRequestById((int) $id, $user->id);
 
         if (!$request) {
@@ -101,9 +196,6 @@ class LeaveRequestService
         ];
     }
 
-    /**
-     * قاعدة Auth Type Hinting الصارمة
-     */
     private function getAuthenticatedUser(): User
     {
         $user = User::find(Auth::id());

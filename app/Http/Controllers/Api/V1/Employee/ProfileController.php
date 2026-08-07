@@ -64,12 +64,12 @@ class ProfileController extends Controller
                 'data' => new ProfileResource($updatedUser)
             ]);
 
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update profile. Please check your connection.',
-            ], 500);
-        }
+            } catch (Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'حدث خطأ أثناء تحديث الملف الشخصي.',
+                ], 422);
+            }
     }
         public function changePassword(ChangePasswordRequest $request): JsonResponse
     {

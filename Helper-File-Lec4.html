@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تفاعلي: نظم الوسائط المتعددة — مفاهيم الصوت</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Nunito:wght@400;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --moss: #5d7052;
+            --moss-light: #7a8f6d;
+            --moss-dark: #46563e;
+            --clay: #c18c5d;
+            --clay-light: #d4a87a;
+            --clay-dark: #9e6f45;
+            --sand: #e6dcce;
+            --sand-dark: #c4b8a5;
+            --white: #faf8f5;
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.65);
+            --shadow: 0 8px 32px rgba(93, 112, 82, 0.15);
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Tajawal', 'Nunito', sans-serif;
+            background: var(--sand);
+            color: #2c2c2c;
+            line-height: 1.8;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .blob-container {
+            position: fixed; inset: 0; z-index: -1;
+            overflow: hidden; pointer-events: none;
+        }
+        .blob {
+            position: absolute; border-radius: 50%;
+            filter: blur(80px); opacity: 0.45;
+            animation: float 20s infinite ease-in-out;
+        }
+        .blob-1 { width: 500px; height: 500px; background: var(--moss); top: -10%; right: -10%; animation-delay: 0s; }
+        .blob-2 { width: 400px; height: 400px; background: var(--clay); bottom: -10%; left: -10%; animation-delay: -5s; }
+        .blob-3 { width: 300px; height: 300px; background: var(--moss-light); top: 40%; left: 30%; animation-delay: -10s; opacity: 0.3; }
+        @keyframes float {
+            0%, 100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(30px,-30px) scale(1.05); }
+            66% { transform: translate(-20px,20px) scale(0.95); }
+        }
+        .progress-wrapper {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(230,220,206,0.85); backdrop-filter: blur(12px);
+            padding: 12px 24px; box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            display: flex; align-items: center; gap: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .progress-info {
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+            color: var(--moss-dark); font-weight: 500; white-space: nowrap;
+            min-width: 90px; text-align: center;
+        }
+        .progress-track { flex: 1; height: 10px; background: rgba(93,112,82,0.15); border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--moss), var(--clay)); border-radius: 10px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); width: 0%; }
+        .reset-btn-top {
+            background: transparent; border: 1.5px solid var(--moss); color: var(--moss);
+            padding: 6px 16px; border-radius: 20px; font-family: 'Tajawal', sans-serif;
+            font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;
+        }
+        .reset-btn-top:hover { background: var(--moss); color: var(--white); }
+        .container { max-width: 800px; margin: 0 auto; padding: 100px 20px 60px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-family: 'Fraunces', serif; font-size: clamp(1.8rem,5vw,2.6rem); color: var(--moss-dark); margin-bottom: 8px; font-weight: 700; }
+        .header .subtitle { font-size: 1.05rem; color: var(--clay-dark); font-weight: 500; }
+        .glass-card {
+            background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover { box-shadow: 0 12px 40px rgba(93,112,82,0.2); }
+        .concepts-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+        .concepts-header h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--moss-dark); display: flex; align-items: center; gap: 10px; }
+        .concepts-header h2 .icon { font-size: 1.5rem; }
+        .toggle-icon { font-size: 1.2rem; color: var(--moss); transition: transform 0.3s ease; }
+        .toggle-icon.open { transform: rotate(180deg); }
+        .concepts-body { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0,1,0,1), padding 0.3s ease; }
+        .concepts-body.open { max-height: 2500px; padding-top: 20px; transition: max-height 0.5s ease-in-out, padding 0.3s ease; }
+        .concept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .concept-item { background: rgba(255,255,255,0.6); border-radius: var(--radius-sm); padding: 16px; border-right: 4px solid var(--clay); transition: transform 0.2s ease; }
+        .concept-item:hover { transform: translateY(-3px); background: rgba(255,255,255,0.85); }
+        .concept-item h4 { font-family: 'Fraunces', serif; color: var(--moss-dark); font-size: 0.95rem; margin-bottom: 6px; }
+        .concept-item p { font-size: 0.85rem; color: #555; line-height: 1.6; }
+        .section-header {
+            font-family: 'Fraunces', serif; font-size: 1.15rem; color: var(--white);
+            background: linear-gradient(135deg, var(--moss), var(--moss-light));
+            padding: 14px 24px; border-radius: var(--radius-sm);
+            margin: 32px 0 20px; box-shadow: 0 4px 15px rgba(93,112,82,0.3);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .question-card {
+            background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius);
+            padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(93,112,82,0.08);
+            transition: all 0.3s ease; opacity: 0; transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+        }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .question-number {
+            display: inline-block; background: linear-gradient(135deg, var(--clay), var(--clay-light));
+            color: var(--white); font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem; font-weight: 700; padding: 4px 12px;
+            border-radius: 20px; margin-bottom: 10px;
+        }
+        .question-text { font-size: 1.05rem; font-weight: 700; color: #2c2c2c; margin-bottom: 16px; line-height: 1.7; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .option-btn {
+            background: rgba(255,255,255,0.85); border: 2px solid rgba(93,112,82,0.15);
+            border-radius: var(--radius-sm); padding: 14px 18px;
+            font-family: 'Tajawal', sans-serif; font-size: 0.95rem;
+            text-align: right; cursor: pointer; transition: all 0.25s ease;
+            display: flex; align-items: center; gap: 12px; color: #333;
+            position: relative; overflow: hidden;
+        }
+        .option-btn:hover:not(.disabled) { border-color: var(--moss-light); background: rgba(93,112,82,0.06); transform: translateX(-4px); }
+        .option-btn .opt-label {
+            font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.85rem;
+            color: var(--moss); background: rgba(93,112,82,0.1);
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; flex-shrink: 0;
+        }
+        .option-btn.correct { background: rgba(93,160,93,0.12); border-color: #5a9; color: #2a5; }
+        .option-btn.correct .opt-label { background: #5a9; color: white; }
+        .option-btn.wrong { background: rgba(200,90,90,0.12); border-color: #c55; color: #a33; }
+        .option-btn.wrong .opt-label { background: #c55; color: white; }
+        .option-btn.disabled { cursor: default; opacity: 0.85; }
+        .option-btn .check-icon { margin-right: auto; font-size: 1.2rem; opacity: 0; transform: scale(0); transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        .option-btn.correct .check-icon, .option-btn.wrong .check-icon { opacity: 1; transform: scale(1); }
+        .explanation {
+            margin-top: 16px; padding: 16px;
+            background: linear-gradient(135deg, rgba(93,112,82,0.08), rgba(193,140,93,0.08));
+            border-radius: var(--radius-sm); border-right: 4px solid var(--moss);
+            font-size: 0.9rem; color: #444; line-height: 1.8; display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .explanation.show { display: block; }
+        .explanation strong { color: var(--moss-dark); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .toast-container { position: fixed; bottom: 24px; left: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm); padding: 14px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 0.95rem;
+            transform: translateX(-120%); animation: toastSlide 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+            max-width: 320px;
+        }
+        .toast.hiding { animation: toastOut 0.3s ease forwards; }
+        @keyframes toastSlide { to { transform: translateX(0); } }
+        @keyframes toastOut { to { transform: translateX(-120%); opacity: 0; } }
+        .toast.success { border-right: 4px solid #5a9; color: var(--moss-dark); }
+        .toast.error { border-right: 4px solid #c55; color: #833; }
+        .toast-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .results-card {
+            background: linear-gradient(135deg, rgba(93,112,82,0.9), rgba(70,86,62,0.95));
+            color: var(--white); border-radius: var(--radius); padding: 40px;
+            text-align: center; margin-top: 40px; box-shadow: 0 20px 60px rgba(93,112,82,0.3);
+            display: none; animation: fadeInUp 0.6s ease; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .results-card.show { display: block; }
+        .results-card h2 { font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 10px; }
+        .score-circle { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(var(--clay) calc(var(--pct) * 1%), rgba(255,255,255,0.2) 0); margin: 24px auto; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .score-circle::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: var(--moss-dark); }
+        .score-text { position: relative; font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--white); }
+        .motivational-msg { font-size: 1.1rem; margin-top: 10px; opacity: 0.95; font-weight: 500; }
+        .results-details { margin-top: 20px; font-size: 0.9rem; opacity: 0.85; font-family: 'IBM Plex Mono', monospace; }
+        .reset-large { background: var(--clay); color: var(--white); border: none; padding: 14px 36px; border-radius: 30px; font-family: 'Tajawal', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 24px; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(193,140,93,0.4); }
+        .reset-large:hover { background: var(--clay-dark); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(193,140,93,0.5); }
+        @media (max-width: 600px) {
+            .container { padding: 90px 14px 40px; }
+            .glass-card { padding: 18px; }
+            .question-card { padding: 18px; }
+            .progress-wrapper { padding: 10px 14px; }
+            .concept-grid { grid-template-columns: 1fr; }
+            .toast-container { left: 14px; right: 14px; bottom: 14px; }
+            .toast { max-width: 100%; }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--sand); }
+        ::-webkit-scrollbar-thumb { background: var(--moss-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--moss); }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="blob-container">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="progress-wrapper">
+        <div class="progress-info" id="progressText">0 / 55</div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <button class="reset-btn-top" onclick="resetQuiz()">إعادة التعيين ↺</button>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="container">
+        <div class="header">
+            <h1>نظم الوسائط المتعددة: مفاهيم الصوت</h1>
+            <p class="subtitle">اختبار تفاعلي وملخص مرجعي — د. مدحت الصوص</p>
+        </div>
+        <div class="glass-card">
+            <div class="concepts-header" onclick="toggleConcepts()">
+                <h2><span class="icon">📚</span> صندوق المفاهيم الأساسية</h2>
+                <span class="toggle-icon" id="toggleIcon">▼</span>
+            </div>
+            <div class="concepts-body" id="conceptsBody">
+                <div class="concept-grid">
+                    <div class="concept-item"><h4>الصوت فيزيائياً</h4><p>موجة تتولد عن اهتزاز الأجسام في وسط مادي (مثل الهواء) وتحمل هذا الاهتزاز إلى الأذن.</p></div>
+                    <div class="concept-item"><h4>التردد (Frequency)</h4><p>عدد الدورات الكاملة ذهاباً وإياباً في الثانية الواحدة؛ وحدة القياس: هرتز (Hz).</p></div>
+                    <div class="concept-item"><h4>الدور (Period)</h4><p>الوقت اللازم لإتمام دورة كاملة؛ مقلوب التردد: Period = 1/frequency.</p></div>
+                    <div class="concept-item"><h4>نطاق السمع البشري</h4><p>يتراوح بين 20Hz و22KHz؛ الترددات خارج هذا النطاق غير مسموعة.</p></div>
+                    <div class="concept-item"><h4>Ultrasound</h4><p>ترددات فوق قدرة السمع البشري: من 22KHz إلى 1GHz.</p></div>
+                    <div class="concept-item"><h4>Infrasound</h4><p>ترددات تحت قدرة السمع البشري: من 0Hz إلى 20Hz.</p></div>
+                    <div class="concept-item"><h4>الحساسية القصوى للأذن</h4><p>تكون في النطاق بين 2KHz و4KHz؛ هنا تسمع الأذن بأقل مستوى ديسيبل.</p></div>
+                    <div class="concept-item"><h4>نطاق صوت الإنسان</h4><p>يتراوح تقريباً بين 500Hz و2KHz.</p></div>
+                    <div class="concept-item"><h4>عتبة السمع (Threshold in Quiet)</h4><p>الحد الأدنى من الضغط الصوتي اللازم لسماع كل تردد في بيئة هادئة.</p></div>
+                    <div class="concept-item"><h4>الديسيبل (dB)</h4><p>وحدة نسبية لوغاريتمية (أساس 10) تُستخدم للمقارنة بين مستويين من القوة أو الضغط الصوتي.</p></div>
+                    <div class="concept-item"><h4>الصوت المرجعي</h4><p>20 micropascals (0.02 mPa) = 0dB؛ وهو الحد الأدنى الذي تستطيع الأذن البشرية سماعه.</p></div>
+                    <div class="concept-item"><h4>الحد الأقصى للصوت</h4><p>194dB هو أعلى شدة صوت يمكن أن تصل إليه موجة صوتية غير مشوهة في الغلاف الجوي.</p></div>
+                    <div class="concept-item"><h4>الرقمنة (Digitization)</h4><p>تحويل الإشارة التماثلية إلى رقمية عبر عمليتين: Sampling (التقطيع) و Quantization (التكميم).</p></div>
+                    <div class="concept-item"><h4>قانون Nyquist</h4><p>fs ≥ 2fa؛ يجب أن يكون تردد العينات على الأقل ضعف أعلى تردد في الإشارة الأصلية لتجنب Aliasing.</p></div>
+                    <div class="concept-item"><h4>Low Pass Filter</h4><p>مرشح يُستخدم قبل التقطيع لإزالة الترددات العالية التي تسبب Aliasing.</p></div>
+                    <div class="concept-item"><h4>Bit Depth</h4><p>عدد البتات لكل عينة: 8-bit = 256 مستوى، 16-bit = 65,536 مستوى (جودة CD).</p></div>
+                    <div class="concept-item"><h4>Quantization Distortion</h4><p>التشوه الناتج عن تقريب القيمة الحقيقية لأقرب مستوى متاح؛ يقل بزيادة Bit Depth.</p></div>
+                    <div class="concept-item"><h4>القنوات الصوتية</h4><p>Mono (قناة واحدة)، Stereo (قناتان)، 5.1 (6 قنوات: 5 أساسية + Subwoofer)، 7.1 (8 قنوات).</p></div>
+                    <div class="concept-item"><h4>معدل البيانات الصوتي</h4><p>Data Rate = Sampling Rate × Bit Depth × Number of Channels (bits/sec).</p></div>
+                </div>
+            </div>
+        </div>
+        <div id="quizContainer"></div>
+        <div class="results-card" id="resultsCard">
+            <h2>🎉 اكتمل الاختبار!</h2>
+            <div class="score-circle" id="scoreCircle" style="--pct: 0;"><div class="score-text" id="scoreText">0%</div></div>
+            <p class="motivational-msg" id="motivationalMsg"></p>
+            <p class="results-details" id="resultsDetails"></p>
+            <button class="reset-large" onclick="resetQuiz()">إعادة الاختبار من جديد ↺</button>
+        </div>
+    </div>
+    <script>
+
+        const rawQuestions = [
+            {
+                id: 1, section: "ماهو الصوت؟",
+                question: "ما التعريف الفيزيائي الصحيح للصوت؟",
+                options: [
+                    { text: "موجة تتولد عن اهتزاز الأجسام في وسط مادي", correct: true },
+                    { text: "جسيمات دقيقة تنتقل في الفراغ", correct: false },
+                    { text: "إشارة كهربائية نقية لا تحتاج لوسط", correct: false },
+                    { text: "تردد كهرومغناطيسي ينتقل عبر الأثير", correct: false }
+                ],
+                explanation: "الصوت فيزيائياً هو موجة تتولد عن اهتزاز الأجسام (مثل الحبال الصوتية) في وسط مادي (مثل الهواء) وتحمل هذا الاهتزاز إلى الأذن."
+            },
+            {
+                id: 2, section: "ماهو الصوت؟",
+                question: "ما المثال الوارد في المحاضرة لتوليد الصوت؟",
+                options: [
+                    { text: "اهتزاز الحبال الصوتية عند التكلم", correct: true },
+                    { text: "انعكاس الضوء عن الجدران", correct: false },
+                    { text: "دوران المحركات الكهربائية", correct: false },
+                    { text: "تدفق التيار الكهربائي في السلك", correct: false }
+                ],
+                explanation: "المحاضرة تذكر أن الصوت يتولد عندما تهتز الحبال الصوتية لدى الإنسان أثناء التكلم، فيحمل الهواء هذه الاهتزازات إلى الأذن."
+            },
+            {
+                id: 3, section: "التردد والدور",
+                question: "ما هو تعريف التردد (Frequency)؟",
+                options: [
+                    { text: "عدد الدورات الكاملة ذهاباً وإياباً في الثانية الواحدة", correct: true },
+                    { text: "الوقت اللازم لإتمام دورة كاملة", correct: false },
+                    { text: "المسافة بين قمتين متتاليتين للموجة", correct: false },
+                    { text: "سرعة انتشار الصوت في الهواء", correct: false }
+                ],
+                explanation: "التردد هو عدد الدورات الكاملة ذهاباً وإياباً من الحركة الاهتزازية بالنسبة لوحدة الزمن، ويُقاس بالهرتز (Hz)."
+            },
+            {
+                id: 4, section: "التردد والدور",
+                question: "ما هي وحدة قياس التردد؟",
+                options: [
+                    { text: "الهرتز (Hz)", correct: true },
+                    { text: "الديسيبل (dB)", correct: false },
+                    { text: "الواط (Watt)", correct: false },
+                    { text: "الفولت (Volt)", correct: false }
+                ],
+                explanation: "يُقاس التردد بوحدة الهرتز (Hz)، حيث 1Hz = 1 Cycle/second."
+            },
+            {
+                id: 5, section: "التردد والدور",
+                question: "ما هو تعريف الدور (Period)؟",
+                options: [
+                    { text: "الوقت اللازم لإتمام دورة كاملة ذهاباً وإياباً", correct: true },
+                    { text: "عدد الدورات في الثانية الواحدة", correct: false },
+                    { text: "شدة الاهتزاز في الجسم", correct: false },
+                    { text: "سرعة انتقال الصوت في الوسط", correct: false }
+                ],
+                explanation: "الدور (Period) هو الوقت اللازم لإتمام دورة كاملة ذهاباً وإياباً من الحركة الاهتزازية لجزيئات الوسط."
+            },
+            {
+                id: 6, section: "التردد والدور",
+                question: "ما هي العلاقة بين الدور (Period) والتردد (Frequency)؟",
+                options: [
+                    { text: "Period = 1 / frequency", correct: true },
+                    { text: "Period = frequency × 2", correct: false },
+                    { text: "Period = frequency²", correct: false },
+                    { text: "Period = frequency + 1", correct: false }
+                ],
+                explanation: "الدور هو مقلوب التردد: Period = 1/frequency؛ فكلما زاد التردد قل الدور والعكس صحيح."
+            },
+            {
+                id: 7, section: "نطاق السمع البشري",
+                question: "ما هو نطاق الترددات التي تستطيع الأذن البشرية سماعها؟",
+                options: [
+                    { text: "من 20Hz إلى 22KHz", correct: true },
+                    { text: "من 0Hz إلى 20KHz", correct: false },
+                    { text: "من 100Hz إلى 10KHz", correct: false },
+                    { text: "من 50Hz إلى 50KHz", correct: false }
+                ],
+                explanation: "يُقال إن الأذن البشرية تتحسس الأصوات التي تقع تردداتها بين 20Hz و22KHz تقريباً."
+            },
+            {
+                id: 8, section: "نطاق السمع البشري",
+                question: "ما هي الترددات التي تُسمى Ultrasound (فوق الصوت)؟",
+                options: [
+                    { text: "من 22KHz إلى 1GHz", correct: true },
+                    { text: "من 0Hz إلى 20Hz", correct: false },
+                    { text: "من 20Hz إلى 22KHz", correct: false },
+                    { text: "من 1GHz إلى 10GHz", correct: false }
+                ],
+                explanation: "Ultrasound هي الترددات التي تفوق قدرة السمع البشري، وتتراوح من 22KHz إلى 1GHz."
+            },
+            {
+                id: 9, section: "نطاق السمع البشري",
+                question: "ما هي الترددات التي تُسمى Infrasound (تحت الصوت)؟",
+                options: [
+                    { text: "من 0Hz إلى 20Hz", correct: true },
+                    { text: "من 20Hz إلى 100Hz", correct: false },
+                    { text: "من 22KHz إلى 1GHz", correct: false },
+                    { text: "من 100Hz إلى 500Hz", correct: false }
+                ],
+                explanation: "Infrasound هي الترددات التي تقل عن قدرة السمع البشري، من 0Hz إلى 20Hz."
+            },
+            {
+                id: 10, section: "نطاق السمع البشري",
+                question: "في أي نطاق تكون حساسية الأذن القصوى؟",
+                options: [
+                    { text: "بين 2KHz و4KHz", correct: true },
+                    { text: "بين 20Hz و100Hz", correct: false },
+                    { text: "بين 10KHz و15KHz", correct: false },
+                    { text: "بين 500Hz و1KHz", correct: false }
+                ],
+                explanation: "تكون الحساسية القصوى للأذن في النطاق بين 2KHz و4KHz، حيث تستطيع سماع الأصوات بمستويات ديسيبل منخفضة جداً."
+            },
+            {
+                id: 11, section: "نطاق السمع البشري",
+                question: "ما هو نطاق صوت الإنسان تقريباً؟",
+                options: [
+                    { text: "بين 500Hz و2KHz", correct: true },
+                    { text: "بين 20Hz و500Hz", correct: false },
+                    { text: "بين 2KHz و8KHz", correct: false },
+                    { text: "بين 10KHz و20KHz", correct: false }
+                ],
+                explanation: "يتراوح نطاق صوت الإنسان تقريباً بين 500Hz و2KHz."
+            },
+            {
+                id: 12, section: "نطاق السمع البشري",
+                question: "لماذا يمكن الاستغناء عن الترددات خارج نطاق السمع البشري في الملفات الصوتية؟",
+                options: [
+                    { text: "لأن الأذن لا تسمعها أصلاً، مما يساعد في تصغير حجم الملف", correct: true },
+                    { text: "لأنها تسبب تشوهاً في الصوت", correct: false },
+                    { text: "لأنها تتعارض مع الترددات المسموعة", correct: false },
+                    { text: "لأن الحاسوب لا يستطيع معالجتها", correct: false }
+                ],
+                explanation: "الترددات خارج نطاق 20Hz-22KHz لا تُسمعها الأذن البشرية، لذا يمكن إزالتها لتقليل حجم الملف دون فقدان ملحوظ في الجودة المدركة."
+            },
+            {
+                id: 13, section: "الديسيبل (dB)",
+                question: "ما هو الديسيبل (Decibel)؟",
+                options: [
+                    { text: "وحدة نسبية تُستخدم للمقارنة بين مستويين من القوة أو الضغط", correct: true },
+                    { text: "وحدة قياس مطلقة مثل المتر والكيلوجرام", correct: false },
+                    { text: "وحدة لقياس سرعة الصوت فقط", correct: false },
+                    { text: "وحدة لقياس تردد الموجات الصوتية", correct: false }
+                ],
+                explanation: "الديسيبل ليس وحدة قياس مطلقة، بل هو وحدة نسبية لوغاريتمية (أساس 10) تُستخدم للمقارنة بين مستويين من القوة أو الضغط."
+            },
+            {
+                id: 14, section: "الديسيبل (dB)",
+                question: "ما هي قيمة الصوت المرجعي (Reference Sound) التي تُستخدم كأساس لقياس الديسيبل؟",
+                options: [
+                    { text: "20 micropascals (0.02 mPa)", correct: true },
+                    { text: "1 pascal", correct: false },
+                    { text: "100 micropascals", correct: false },
+                    { text: "0 dB لا قيمة لها", correct: false }
+                ],
+                explanation: "الصوت المرجعي هو 20 micropascals (0.02 mPa) وهو الحد الأدنى للضغط الذي تستطيع الأذن البشرية سماعه، ويساوي 0dB."
+            },
+            {
+                id: 15, section: "الديسيبل (dB)",
+                question: "ماذا يعني 0dB؟",
+                options: [
+                    { text: "أن الصوت المقاس يساوي الصوت المرجعي (ليس انعداماً للصوت)", correct: true },
+                    { text: "عدم وجود صوت نهائياً", correct: false },
+                    { text: "أن شدة الصوت منخفضة جداً لكن موجودة", correct: false },
+                    { text: "خطأ في قياس الصوت", correct: false }
+                ],
+                explanation: "0dB تعني أن الصوت المقاس يساوي تماماً الصوت المرجعي (P2 = P1)، وليس انعداماً للصوت؛ فلوغاريتم 1 يساوي صفراً."
+            },
+            {
+                id: 16, section: "الديسيبل (dB)",
+                question: "إذا تضاعفت قوة الصوت (P2 = 2×P1)، كم يزيد مستوى الديسيبل؟",
+                options: [
+                    { text: "يزيد بمقدار 3dB تقريباً", correct: true },
+                    { text: "يزيد بمقدار 2dB", correct: false },
+                    { text: "يزيد بمقدار 6dB", correct: false },
+                    { text: "يزيد بمقدار 10dB", correct: false }
+                ],
+                explanation: "باستخدام المعادلة 10×log₁₀(2) ≈ 3.01dB؛ أي أن تضاعف القوة يعادل زيادة حوالي 3dB."
+            },
+            {
+                id: 17, section: "الديسيبل (dB)",
+                question: "إذا أصبحت قوة الصوت عشرة أضعاف الصوت المرجعي، ما قيمة الديسيبل؟",
+                options: [
+                    { text: "10dB", correct: true },
+                    { text: "1dB", correct: false },
+                    { text: "100dB", correct: false },
+                    { text: "5dB", correct: false }
+                ],
+                explanation: "10×log₁₀(10) = 10×1 = 10dB؛ أي أن 10 أضعاف القوة = +10dB."
+            },
+            {
+                id: 18, section: "الديسيبل (dB)",
+                question: "إذا أصبحت قوة الصوت مئة ضعف الصوت المرجعي، ما قيمة الديسيبل؟",
+                options: [
+                    { text: "20dB", correct: true },
+                    { text: "10dB", correct: false },
+                    { text: "100dB", correct: false },
+                    { text: "50dB", correct: false }
+                ],
+                explanation: "10×log₁₀(100) = 10×2 = 20dB؛ أي أن 100 ضعف القوة = +20dB."
+            },
+            {
+                id: 19, section: "الديسيبل (dB)",
+                question: "إذا أصبحت قوة الصوت ألف ضعف الصوت المرجعي، ما قيمة الديسيبل؟",
+                options: [
+                    { text: "30dB", correct: true },
+                    { text: "100dB", correct: false },
+                    { text: "10dB", correct: false },
+                    { text: "300dB", correct: false }
+                ],
+                explanation: "10×log₁₀(1000) = 10×3 = 30dB؛ أي أن 1000 ضعف القوة = +30dB."
+            },
+            {
+                id: 20, section: "الديسيبل (dB)",
+                question: "ما هو الحد الأقصى لشدة الصوت (أعلى ديسيبل) يمكن أن تصل إليه موجة صوتية غير مشوهة في الغلاف الجوي للأرض؟",
+                options: [
+                    { text: "194dB", correct: true },
+                    { text: "200dB", correct: false },
+                    { text: "150dB", correct: false },
+                    { text: "120dB", correct: false }
+                ],
+                explanation: "194dB هو أعلى شدة صوت يمكن أن تصل إليه موجة صوتية غير مشوهة في الغلاف الجوي للأرض."
+            },
+            {
+                id: 21, section: "الديسيبل (dB)",
+                question: "لماذا يُعتبر الديسيبل وحدة لوغاريتمية عشرية؟",
+                options: [
+                    { text: "لأنه يستخدم اللوغاريتم العشري (log₁₀) لقياس النسب بين مستويين", correct: true },
+                    { text: "لأنه يضاعف القيمة بمقدار 10 في كل مرة", correct: false },
+                    { text: "لأنه يقاس فقط في النظام العشري", correct: false },
+                    { text: "لأن قيمته تتراوح بين 0 و10 فقط", correct: false }
+                ],
+                explanation: "الديسيبل وحدة لوغاريتمية عشرية لأن المعادلة تستخدم اللوغاريتم العشري: dB = 10×log₁₀(P2/P1)."
+            },
+            {
+                id: 22, section: "عملية الرقمنة",
+                question: "ما هي المشكلة الرئيسية للإشارة التماثلية (Analog Signal) عند انتقالها عبر مسافات طويلة؟",
+                options: [
+                    { text: "التخامد (Attenuation) والضجيج (Noise)", correct: true },
+                    { text: "زيادة سرعة الصوت", correct: false },
+                    { text: "تحولها تلقائياً إلى رقمية", correct: false },
+                    { text: "فقدان الترددات المنخفضة فقط", correct: false }
+                ],
+                explanation: "الإشارة التماثلية تعاني من التخامد (ضعف الشدة) نتيجة مقاومة الأسلاك الطويلة، وتقويتها تؤدي لتقوية الضجيج المرافق أيضاً."
+            },
+            {
+                id: 23, section: "عملية الرقمنة",
+                question: "ما هي العمليتان الأساسيتان لتحويل الصوت من Analog إلى Digital؟",
+                options: [
+                    { text: "Sampling (التقطيع) و Quantization (التكميم)", correct: true },
+                    { text: "Compression و Decompression", correct: false },
+                    { text: "Filtering و Amplification", correct: false },
+                    { text: "Modulation و Demodulation", correct: false }
+                ],
+                explanation: "يتم تحويل الصوت من تماثلي إلى رقمي عبر عمليتين أساسيتين: Sampling (أخذ عينات زمنية) و Quantization (تقريب قيم السعة)."
+            },
+            {
+                id: 24, section: "عملية الرقمنة",
+                question: "ما هي وظيفة الميكروفون (Microphone) في سلسلة معالجة الصوت؟",
+                options: [
+                    { text: "تحويل الإشارة من تماثلية إلى رقمية (Encoding)", correct: true },
+                    { text: "تحويل الإشارة من رقمية إلى تماثلية (Decoding)", correct: false },
+                    { text: "ضغط البيانات الصوتية", correct: false },
+                    { text: "تقوية الإشارة الصوتية فقط", correct: false }
+                ],
+                explanation: "الميكروفون يستقبل الصوت التماثلي ويحوله إلى إشارة رقمية بواسطة عملية Encoding."
+            },
+            {
+                id: 25, section: "عملية الرقمنة",
+                question: "ما هي وظيفة السماعة (Speaker) في سلسلة معالجة الصوت؟",
+                options: [
+                    { text: "تحويل الإشارة من رقمية إلى تماثلية (Decoding)", correct: true },
+                    { text: "تحويل الإشارة من تماثلية إلى رقمية", correct: false },
+                    { text: "تخزين الإشارة الصوتية", correct: false },
+                    { text: "قياس شدة الصوت", correct: false }
+                ],
+                explanation: "السماعة تستقبل الإشارة الرقمية من الحاسوب وتحولها إلى إشارة تماثلية يمكن للأذن البشرية سماعها عبر عملية Decoding."
+            },
+            {
+                id: 26, section: "التقطيع (Sampling)",
+                question: "ما هو تعريف Sampling في سياق معالجة الصوت الرقمي؟",
+                options: [
+                    { text: "أخذ عينات (Samples) من الإشارة التماثلية عند لحظات زمنية منفصلة", correct: true },
+                    { text: "تقسيم السعة إلى مستويات منفصلة", correct: false },
+                    { text: "ضغط الملف الصوتي لتقليل حجمه", correct: false },
+                    { text: "تحويل الترددات العالية إلى منخفضة", correct: false }
+                ],
+                explanation: "Sampling هو أخذ عينات محددة من الإشارة التماثلية عند لحظات زمنية منفصلة بدلاً من التعامل مع المنحنى المستمر."
+            },
+            {
+                id: 27, section: "التقطيع (Sampling)",
+                question: "لماذا نستخدم مسافات زمنية متساوية في عملية Sampling عملياً؟",
+                options: [
+                    { text: "لأننا نحتاج فقط لتخزين قيمة y، أما x معروفة مسبقاً من ترتيب العينة", correct: true },
+                    { text: "لأن الإشارة التماثلية تتغير بشكل منتظم دائماً", correct: false },
+                    { text: "لأن الحاسوب لا يستطيع التعامل مع مسافات غير متساوية", correct: false },
+                    { text: "لأن القانون الفيزيائي يفرض ذلك", correct: false }
+                ],
+                explanation: "في التقطيع المنتظم، المسافة الزمنية ثابتة، لذا يكفي تخزين قيمة y فقط لكل عينة لأن قيمة x (الزمن) معروفة من ترتيب العينة."
+            },
+            {
+                id: 28, section: "التقطيع (Sampling)",
+                question: "ما هو تعريف Sampling Rate؟",
+                options: [
+                    { text: "عدد العينات المأخوذة في الثانية الواحدة", correct: true },
+                    { text: "عدد البتات المستخدمة لكل عينة", correct: false },
+                    { text: "عدد القنوات الصوتية في الملف", correct: false },
+                    { text: "مدة التسجيل الصوتي بالثواني", correct: false }
+                ],
+                explanation: "Sampling Rate هو عدد العينات المأخوذة في الثانية الواحدة، ويُقاس بالهرتز (Hz)."
+            },
+            {
+                id: 29, section: "التقطيع (Sampling)",
+                question: "ما هي مشكلة Under Sampling؟",
+                options: [
+                    { text: "عدد عينات قليل يؤدي إلى فقدان معالم الإشارة الأصلية وتشويه الصوت", correct: true },
+                    { text: "زيادة حجم الملف بشكل مبالغ فيه", correct: false },
+                    { text: "زيادة جودة الصوت بشكل غير ضروري", correct: false },
+                    { text: "تكرار العينات بشكل زائد عن الحاجة", correct: false }
+                ],
+                explanation: "Under Sampling يعني أخذ عينات قليلة جداً، مما يؤدي إلى فقدان معالم الإشارة الأصلية وتشويه الصوت (Aliasing)."
+            },
+            {
+                id: 30, section: "التقطيع (Sampling)",
+                question: "ما هي مشكلة Over Sampling؟",
+                options: [
+                    { text: "عدد عينات ضخم يؤدي إلى دقة عالية لكن مع زيادة هائلة في حجم الملف", correct: true },
+                    { text: "فقدان معالم الإشارة الأصلية", correct: false },
+                    { text: "تشويه الصوت بسبب التداخل الترددي", correct: false },
+                    { text: "عدم القدرة على إعادة بناء الإشارة", correct: false }
+                ],
+                explanation: "Over Sampling يعني أخذ عينات أكثر من اللازم؛ يعطي دقة عالية لكن مع زيادة هائلة وغير مبررة في حجم الملف وتكلفة المعالجة."
+            },
+            {
+                id: 31, section: "قانون Nyquist",
+                question: "ما ينص قانون Nyquist على أنه يجب أن يكون تردد العينات fs؟",
+                options: [
+                    { text: "على الأقل ضعف أعلى تردد fa موجود في الإشارة الأصلية", correct: true },
+                    { text: "يساوي أعلى تردد fa في الإشارة الأصلية", correct: false },
+                    { text: "نصف أعلى تردد fa في الإشارة الأصلية", correct: false },
+                    { text: "أربع أضعاف أعلى تردد fa في الإشارة الأصلية", correct: false }
+                ],
+                explanation: "قانون Nyquist: fs ≥ 2×fa؛ يجب أن يكون تردد العينات على الأقل ضعف أعلى تردد في الإشارة الأصلية لإعادة بنائها دون فقدان."
+            },
+            {
+                id: 32, section: "قانون Nyquist",
+                question: "إذا كان أعلى تردد في إشارة صوتية هو 22KHz، ما هو الحد الأدنى لـ Sampling Rate وفقاً لقانون Nyquist؟",
+                options: [
+                    { text: "44KHz", correct: true },
+                    { text: "22KHz", correct: false },
+                    { text: "11KHz", correct: false },
+                    { text: "88KHz", correct: false }
+                ],
+                explanation: "وفقاً لقانون Nyquist: fs ≥ 2×22KHz = 44KHz؛ وهذا هو السبب في أن جودة CD تستخدم 44,100Hz."
+            },
+            {
+                id: 33, section: "قانون Nyquist",
+                question: "ماذا يحدث عندما يكون Sampling Rate أصغر من ضعف أعلى تردد في الإشارة (fs < 2fa)؟",
+                options: [
+                    { text: "يحدث Aliasing (التداخل الترددي) مما يؤدي لتشويه الصوت", correct: true },
+                    { text: "يتحسن جودة الصوت بشكل ملحوظ", correct: false },
+                    { text: "يقل حجم الملف دون أي تأثير", correct: false },
+                    { text: "تزداد دقة التسجيل", correct: false }
+                ],
+                explanation: "عندما يكون fs < 2fa، تحدث ظاهرة Aliasing (التداخل الترددي) حيث تتداخل الترددات المكررة مع الإشارة الأصلية وتفسدها."
+            },
+            {
+                id: 34, section: "قانون Nyquist",
+                question: "ما هو Aliasing في سياق معالجة الإشارات الرقمية؟",
+                options: [
+                    { text: "تداخل الترددات الناتج عن Sampling Rate منخفض يؤدي لظهور ترددات وهمية", correct: true },
+                    { text: "زيادة وضوح الإشارة بعد التكميم", correct: false },
+                    { text: "ضغط البيانات الصوتية بطريقة فعالة", correct: false },
+                    { text: "تحويل الإشارة من تماثلية إلى رقمية", correct: false }
+                ],
+                explanation: "Aliasing هو التداخل الترددي الذي يحدث عندما يكون Sampling Rate غير كافٍ، مما يؤدي لظهور ترددات وهمية وتشويه الإشارة الأصلية."
+            },
+            {
+                id: 35, section: "قانون Nyquist",
+                question: "إذا كان Sampling Rate أكبر بكثير من أعلى تردد في الإشارة (fs >> fa)، ما النتيجة؟",
+                options: [
+                    { text: "تكرار في الإشارة مع مسافة كبيرة بين كل إشارة وأخرى (إسراف في البيانات)", correct: true },
+                    { text: "فقدان كامل للإشارة الأصلية", correct: false },
+                    { text: "تحسن غير محسوس في الجودة مع تقليل الحجم", correct: false },
+                    { text: "ظهور ترددات وهمية جديدة", correct: false }
+                ],
+                explanation: "عندما يكون fs >> fa، يكون هناك تكرار في الإشارة لكن المسافة بين كل إشارة وأخرى كبيرة، مما يعني إسرافاً في البيانات دون تحسن ملحوظ."
+            },
+            {
+                id: 36, section: "Low Pass Filter",
+                question: "ما هي وظيفة Low Pass Filter قبل عملية Sampling؟",
+                options: [
+                    { text: "يسمح بمرور الترددات المنخفضة ويمنع الترددات العالية التي تسبب Aliasing", correct: true },
+                    { text: "يزيد من شدة جميع الترددات بنسبة متساوية", correct: false },
+                    { text: "يحول الإشارة التماثلية إلى رقمية مباشرة", correct: false },
+                    { text: "يضيف تأثيرات صوتية خاصة على الإشارة", correct: false }
+                ],
+                explanation: "Low Pass Filter يُستخدم كخطوة استباقية قبل التقطيع؛ يسمح بمرور الترددات المنخفضة ويحجب الترددات العالية التي تسبب Aliasing."
+            },
+            {
+                id: 37, section: "Low Pass Filter",
+                question: "ما الهدف من تنعيم الإشارة (Smoothing) باستخدام Low Pass Filter قبل Sampling؟",
+                options: [
+                    { text: "تخفيف التعرجات العالية التردد لتجنب Aliasing عند التقطيع", correct: true },
+                    { text: "زيادة حدة الإشارة وتضخيمها", correct: false },
+                    { text: "تحويل الإشارة إلى صيغة رقمية", correct: false },
+                    { text: "إضافة ضوضاء بيضاء للإشارة", correct: false }
+                ],
+                explanation: "Low Pass Filter يُستخدم لتنعيم الإشارة وتخفيف التعرجات العالية التردد، مما يسهل عملية Sampling ويمنع Aliasing."
+            },
+            {
+                id: 38, section: "معدلات التقطيع المستخدمة",
+                question: "ما Sampling Rate المستخدم في جودة CD الصوتية؟",
+                options: [
+                    { text: "44,100Hz", correct: true },
+                    { text: "22,050Hz", correct: false },
+                    { text: "32,000Hz", correct: false },
+                    { text: "11,025Hz", correct: false }
+                ],
+                explanation: "44,100Hz هو المعيار الأعلى ويُستخدم للموسيقى الاحترافية؛ يغطي كامل نطاق السمع البشري بدقة عالية."
+            },
+            {
+                id: 39, section: "معدلات التقطيع المستخدمة",
+                question: "أي Sampling Rate يُستخدم عادةً في مكالمات الهاتف؟",
+                options: [
+                    { text: "8,000Hz", correct: true },
+                    { text: "44,100Hz", correct: false },
+                    { text: "22,050Hz", correct: false },
+                    { text: "32,000Hz", correct: false }
+                ],
+                explanation: "8,000Hz هو الحد الأدنى ويُستخدم في المكالمات الهاتفية وأجهزة اللا سلكي (Walkie-talkie) لأن التركيز على فهم الكلام فقط بأقل حجم بيانات."
+            },
+            {
+                id: 40, section: "معدلات التقطيع المستخدمة",
+                question: "ما Sampling Rate الذي يُستخدم في إذاعات راديو AM والتسجيلات البسيطة؟",
+                options: [
+                    { text: "11,025Hz", correct: true },
+                    { text: "8,000Hz", correct: false },
+                    { text: "22,050Hz", correct: false },
+                    { text: "44,100Hz", correct: false }
+                ],
+                explanation: "11,025Hz كافية جداً لنقل الأحاديث المسجلة أو إذاعة راديو AM حيث لا نحتاج لتفاصيل موسيقية دقيقة."
+            },
+            {
+                id: 41, section: "معدلات التقطيع المستخدمة",
+                question: "أي Sampling Rate يُستخدم في ضغط MP3 بجودة منخفضة؟",
+                options: [
+                    { text: "22,050Hz", correct: true },
+                    { text: "44,100Hz", correct: false },
+                    { text: "32,000Hz", correct: false },
+                    { text: "8,000Hz", correct: false }
+                ],
+                explanation: "22,050Hz تُستخدم لضغط الملفات بشكل كبير؛ تكون الجودة أقل وضوحاً خاصة في الترددات العالية."
+            },
+            {
+                id: 42, section: "معدلات التقطيع المستخدمة",
+                question: "ما Sampling Rate الذي يوفر جودة متوسطة بين جودة CD والهاتف؟",
+                options: [
+                    { text: "32,000Hz", correct: true },
+                    { text: "44,100Hz", correct: false },
+                    { text: "22,050Hz", correct: false },
+                    { text: "11,025Hz", correct: false }
+                ],
+                explanation: "32,000Hz يوفر جودة جيدة لكنها أقل من CD؛ يُستخدم لتقليل حجم الملف مع الحفاظ على وضوح مقبول."
+            },
+            {
+                id: 43, section: "التكميم (Quantization)",
+                question: "ما هو تعريف Quantization في معالجة الصوت الرقمي؟",
+                options: [
+                    { text: "تقسيم محور السعة (Y) إلى مستويات منفصلة محددة", correct: true },
+                    { text: "أخذ عينات زمنية من الإشارة", correct: false },
+                    { text: "ضغط الملف الصوتي لتقليل حجمه", correct: false },
+                    { text: "تحويل الإشارة من رقمية إلى تماثلية", correct: false }
+                ],
+                explanation: "Quantization هو تقسيم المحور العمودي (Y) المسؤول عن سعة/قوة الصوت إلى مستويات منفصلة لأن الحاسوب لا يستطيع تخزين عدد لا نهائي من القيم."
+            },
+            {
+                id: 44, section: "التكميم (Quantization)",
+                question: "لماذا لا يمكن للحاسوب تخزين القيم المستمرة للسعة (Y) كما هي في الإشارة التماثلية؟",
+                options: [
+                    { text: "لأن الحاسوب يستطيع تخزين عدد محدود من القيم فقط", correct: true },
+                    { text: "لأن القيم المستمرة تستهلك ذاكرة قليلة", correct: false },
+                    { text: "لأن الإشارة التماثلية لا تحتوي على قيم سعة", correct: false },
+                    { text: "لأن القيم المستمرة غير دقيقة", correct: false }
+                ],
+                explanation: "في الإشارة التماثلية تكون قيم السعة مستمرة ولا نهائية، لكن الحاسوب يستطيع تخزين عدد محدود فقط، لذا نلجأ لتقسيم المحور Y إلى مستويات منفصلة."
+            },
+            {
+                id: 45, section: "التكميم (Quantization)",
+                question: "ما هو مفهوم Bit Depth في الصوت الرقمي؟",
+                options: [
+                    { text: "عدد البتات المستخدمة لتخزين قيمة كل عينة صوتية", correct: true },
+                    { text: "عدد العينات المأخوذة في الثانية", correct: false },
+                    { text: "عدد القنوات الصوتية في الملف", correct: false },
+                    { text: "عمق الترددات المنخفضة في الإشارة", correct: false }
+                ],
+                explanation: "Bit Depth هو عدد البتات المستخدمة لتمثيل قيمة كل عينة صوتية؛ كلما زاد عدد البتات زادت دقة التمثيل."
+            },
+            {
+                id: 46, section: "التكميم (Quantization)",
+                question: "كم عدد المستويات المختلفة يوفر نظام 8-bit في التكميم؟",
+                options: [
+                    { text: "256 مستوى", correct: true },
+                    { text: "128 مستوى", correct: false },
+                    { text: "512 مستوى", correct: false },
+                    { text: "1024 مستوى", correct: false }
+                ],
+                explanation: "2⁸ = 256 مستوى؛ في هذا النظام تأخذ القيمة على المحور Y رقماً يتراوح بين 0 و255."
+            },
+            {
+                id: 47, section: "التكميم (Quantization)",
+                question: "كم عدد المستويات المختلفة يوفر نظام 16-bit في التكميم؟",
+                options: [
+                    { text: "65,536 مستوى", correct: true },
+                    { text: "16,384 مستوى", correct: false },
+                    { text: "32,768 مستوى", correct: false },
+                    { text: "256 مستوى", correct: false }
+                ],
+                explanation: "2¹⁶ = 65,536 مستوى؛ هذه الدقة العالية ضرورية لتسجيل الموسيقى (مثل جودة CD) لتمثيل الفروقات الدقيقة في شدة الصوت."
+            },
+            {
+                id: 48, section: "التكميم (Quantization)",
+                question: "ما هو Quantization Distortion (التشوه الكمي)؟",
+                options: [
+                    { text: "الفرق بين القيمة الحقيقية والقيمة المقربة عند عملية التكميم", correct: true },
+                    { text: "زيادة حجم الملف نتيجة زيادة Sampling Rate", correct: false },
+                    { text: "فقدان الترددات العالية أثناء التقطيع", correct: false },
+                    { text: "تشويه ناتج عن ضعف الميكروفون", correct: false }
+                ],
+                explanation: "Quantization Distortion هو الفرق بين القيمة الحقيقية للإشارة والقيمة المقربة عند عملية التكميم؛ يقل هذا التشوه بزيادة Bit Depth."
+            },
+            {
+                id: 49, section: "التكميم (Quantization)",
+                question: "في أسوأ الأحوال، كم يكون التشوه في الإشارة بعد التكميم؟",
+                options: [
+                    { text: "نصف الفترة الزمنية (المسافة الفاصلة بين كل مستوى وآخر)", correct: true },
+                    { text: "ضعف قيمة السعة الأصلية", correct: false },
+                    { text: "ربع الفترة الزمنية فقط", correct: false },
+                    { text: "يساوي قيمة Bit Depth", correct: false }
+                ],
+                explanation: "في أسوأ الأحوال يكون التشوه في الإشارة بعد التكميم يساوي نصف المسافة بين مستويين متتاليين (نصف الفترة الزمنية)."
+            },
+            {
+                id: 50, section: "القنوات الصوتية",
+                question: "ما هو الفرق الأساسي بين Mono و Stereo في الصوت الرقمي؟",
+                options: [
+                    { text: "Mono قناة واحدة، Stereo قناتان منفصلتان (يمين ويسار)", correct: true },
+                    { text: "Mono تسجيل رقمي، Stereo تسجيل تماثلي", correct: false },
+                    { text: "Mono جودة أعلى، Stereo جودة أقل", correct: false },
+                    { text: "Mono يستخدم 8-bit، Stereo يستخدم 16-bit", correct: false }
+                ],
+                explanation: "Mono يتكون من قناة صوتية واحدة فقط، بينما Stereo يتكون من قناتين منفصلتين: قناة يمنى (Right) وقناة يسرى (Left)."
+            },
+            {
+                id: 51, section: "القنوات الصوتية",
+                question: "في نظام 5.1 Surround Sound، ماذا تمثل القناة 0.1؟",
+                options: [
+                    { text: "قناة Subwoofer مخصصة للترددات المنخفضة جداً (20Hz إلى 120Hz)", correct: true },
+                    { text: "قناة مركزية أمامية", correct: false },
+                    { text: "قناة خلفية يمين", correct: false },
+                    { text: "قناة إضافية للتأثيرات الصوتية العالية", correct: false }
+                ],
+                explanation: "في نظام 5.1، الرقم 0.1 يمثل قناة Subwoofer المخصصة للترددات المنخفضة جداً (Bass) من 20Hz إلى 120Hz."
+            },
+            {
+                id: 52, section: "القنوات الصوتية",
+                question: "كم عدد القنوات الصوتية في نظام 7.1 Surround Sound؟",
+                options: [
+                    { text: "8 قنوات صوتية", correct: true },
+                    { text: "7 قنوات صوتية", correct: false },
+                    { text: "6 قنوات صوتية", correct: false },
+                    { text: "5 قنوات صوتية", correct: false }
+                ],
+                explanation: "7.1 يعني 7 قنوات أساسية + 1 قناة Subwoofer = 8 قنوات صوتية إجمالاً."
+            },
+            {
+                id: 53, section: "القنوات الصوتية",
+                question: "أي نظام Surround Sound هو الأكثر شيوعاً في السينمات التجارية؟",
+                options: [
+                    { text: "5.1 Surround Sound", correct: true },
+                    { text: "4.0 Quadraphonic", correct: false },
+                    { text: "6.1 Surround Sound", correct: false },
+                    { text: "7.1 Surround Sound", correct: false }
+                ],
+                explanation: "نظام 5.1 Surround Sound هو الأكثر شيوعاً ويستخدم في السينمات التجارية؛ يتكون من 5 قنوات أساسية + Subwoofer."
+            },
+            {
+                id: 54, section: "حجم الملفات الصوتية",
+                question: "ما هي العوامل الرئيسية التي يعتمد عليها حجم الملف الصوتي؟",
+                options: [
+                    { text: "Sampling Rate و Bit Depth و Audio Channels و Compression", correct: true },
+                    { text: "مدة التسجيل فقط", correct: false },
+                    { text: "نوع الميكروفون المستخدم فقط", correct: false },
+                    { text: "جودة السماعة المستخدمة للتشغيل", correct: false }
+                ],
+                explanation: "يعتمد حجم الملف الصوتي على: Sampling Rate (معدل العينات)، Bit Depth (عمق البت)، Audio Channels (عدد القنوات)، و Compression (الضغط)."
+            },
+            {
+                id: 55, section: "حجم الملفات الصوتية",
+                question: "ما هي المعادلة لحساب معدل البيانات (Data Rate) للصوت غير المضغوط؟",
+                options: [
+                    { text: "Sampling Rate × Bit Depth × Number of Channels", correct: true },
+                    { text: "Sampling Rate + Bit Depth + Number of Channels", correct: false },
+                    { text: "Sampling Rate ÷ Bit Depth × Number of Channels", correct: false },
+                    { text: "Sampling Rate × Bit Depth ÷ Number of Channels", correct: false }
+                ],
+                explanation: "معدل البيانات = Sampling Rate × Bit Depth × Number of Channels (بوحدة bits/sec)."
+            }
+        ];
+
+        const STORAGE_KEY = 'audioQuizState_v1';
+        let questions = [];
+        let answers = {};
+        let shuffledOrders = {};
+
+        function initQuiz() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    answers = data.answers || {};
+                    shuffledOrders = data.shuffledOrders || {};
+                } catch (e) {
+                    answers = {};
+                    shuffledOrders = {};
+                }
+            }
+            questions = rawQuestions.map(q => {
+                const qCopy = { ...q, options: [...q.options] };
+                if (shuffledOrders[q.id] && shuffledOrders[q.id].length === q.options.length) {
+                    const ordered = [];
+                    shuffledOrders[q.id].forEach(idx => ordered.push(qCopy.options[idx]));
+                    qCopy.options = ordered;
+                } else {
+                    qCopy.options = shuffleArray(qCopy.options);
+                    shuffledOrders[q.id] = qCopy.options.map((opt) => q.options.findIndex(orig => orig.text === opt.text));
+                }
+                return qCopy;
+            });
+            saveState();
+            renderQuiz();
+            updateProgress();
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers, shuffledOrders }));
+        }
+
+        function resetQuiz() {
+            if (!confirm('هل أنت متأكد من مسح جميع إجاباتك وإعادة الاختبار من البداية؟')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            answers = {};
+            shuffledOrders = {};
+            initQuiz();
+            document.getElementById('resultsCard').classList.remove('show');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quizContainer');
+            let currentSection = '';
+            let html = '';
+            questions.forEach((q, idx) => {
+                if (q.section !== currentSection) {
+                    currentSection = q.section;
+                    html += `<div class="section-header">📂 ${currentSection}</div>`;
+                }
+                const isAnswered = answers[q.id] !== undefined;
+                const selectedIdx = answers[q.id];
+                html += `<div class="question-card" style="animation-delay: ${idx * 0.03}s" data-qid="${q.id}">`;
+                html += `<span class="question-number">س ${idx + 1}</span>`;
+                html += `<div class="question-text">${q.question}</div>`;
+                html += `<div class="options-grid">`;
+                q.options.forEach((opt, optIdx) => {
+                    let classes = 'option-btn';
+                    let icon = '';
+                    if (isAnswered) {
+                        classes += ' disabled';
+                        if (opt.correct) { classes += ' correct'; icon = '✓'; }
+                        else if (optIdx === selectedIdx && !opt.correct) { classes += ' wrong'; icon = '✕'; }
+                    }
+                    const label = ['أ', 'ب', 'ج', 'د'][optIdx];
+                    html += `<button class="${classes}" onclick="selectOption(${q.id}, ${optIdx})" ${isAnswered ? 'disabled' : ''}>`;
+                    html += `<span class="opt-label">${label}</span><span>${opt.text}</span><span class="check-icon">${icon}</span>`;
+                    html += `</button>`;
+                });
+                html += `</div>`;
+                html += `<div class="explanation ${isAnswered ? 'show' : ''}" id="exp-${q.id}">${q.explanation}</div>`;
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function selectOption(qid, optIdx) {
+            if (answers[qid] !== undefined) return;
+            const q = questions.find(q => q.id === qid);
+            const isCorrect = q.options[optIdx].correct;
+            answers[qid] = optIdx;
+            saveState();
+            const card = document.querySelector(`[data-qid="${qid}"]`);
+            const buttons = card.querySelectorAll('.option-btn');
+            buttons.forEach((btn, idx) => {
+                btn.classList.add('disabled');
+                btn.disabled = true;
+                if (q.options[idx].correct) {
+                    btn.classList.add('correct');
+                    btn.querySelector('.check-icon').textContent = '✓';
+                } else if (idx === optIdx && !q.options[idx].correct) {
+                    btn.classList.add('wrong');
+                    btn.querySelector('.check-icon').textContent = '✕';
+                }
+            });
+            document.getElementById(`exp-${qid}`).classList.add('show');
+            if (isCorrect) showToast('إجابة صحيحة! أحسنت ✨', 'success');
+            else showToast('إجابة خاطئة. راجع التفسير أدناه 📖', 'error');
+            updateProgress();
+            if (Object.keys(answers).length === questions.length) setTimeout(showResults, 800);
+        }
+
+        function updateProgress() {
+            const total = questions.length;
+            const answered = Object.keys(answers).length;
+            const pct = (answered / total) * 100;
+            document.getElementById('progressFill').style.width = pct + '%';
+            document.getElementById('progressText').textContent = `${answered} / ${total}`;
+        }
+
+        function showToast(message, type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? '✅' : '❌';
+            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showResults() {
+            const total = questions.length;
+            let correct = 0;
+            questions.forEach(q => {
+                const selectedIdx = answers[q.id];
+                if (selectedIdx !== undefined && q.options[selectedIdx].correct) correct++;
+            });
+            const pct = Math.round((correct / total) * 100);
+            const resultsCard = document.getElementById('resultsCard');
+            document.getElementById('scoreCircle').style.setProperty('--pct', pct);
+            document.getElementById('scoreText').textContent = pct + '%';
+            document.getElementById('resultsDetails').textContent = `${correct} إجابة صحيحة من أصل ${total}`;
+            let msg = '';
+            if (pct >= 90) msg = '🌟 ممتاز! إتقان رائع لمفاهيم الصوت الرقمي!';
+            else if (pct >= 75) msg = '👏 أداء جيد جداً! لديك فهم قوي للمحتوى.';
+            else if (pct >= 60) msg = '💪 جيد! لكن يمكنك مراجعة بعض النقاط للتحسين.';
+            else if (pct >= 40) msg = '📚 يحتاج إلى مراجعة. راجع صندوق المفاهيم أعلاه.';
+            else msg = '🎯 لا تيأس! راجع المحاضرة وحاول مرة أخرى.';
+            document.getElementById('motivationalMsg').textContent = msg;
+            resultsCard.classList.add('show');
+            setTimeout(() => resultsCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
+
+        function toggleConcepts() {
+            const body = document.getElementById('conceptsBody');
+            const icon = document.getElementById('toggleIcon');
+            body.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+
+        document.addEventListener('DOMContentLoaded', initQuiz);
+    </script>
+</body>
+</html>

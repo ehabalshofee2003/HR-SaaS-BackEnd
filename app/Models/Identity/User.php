@@ -15,8 +15,14 @@ class User extends Authenticatable
     protected $table = 'users';
 
     protected $fillable = [
-        'email', 'phone', 'password_hash', 'user_type', 'status', 
-        'two_factor_enabled', 'last_login_at'
+        'email',
+        'phone',
+        'password_hash',
+        'user_type',
+        'status',
+        'two_factor_enabled',
+        'last_login_at',
+        'branch_id',
     ];
 
     protected $hidden = [
@@ -89,18 +95,22 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\Payroll\EmployeeSalary::class, 'employee_user_id');
     }
-    /**
- /**
- * يحصل على معرف الشركة التابع لها المستخدم بغض النظر عن عمق التسلسل الهرمي
- */
-public function getCurrentCompanyId(): ?int
-{
-    // التأكد من وجود سجل الموظف
-    if (!$this->employeeDetail) {
-        return null;
+    public function getCurrentBranchId(): ?int
+    {
+        return $this->branch_id;
     }
+        /**
+     /**
+     * يحصل على معرف الشركة التابع لها المستخدم بغض النظر عن عمق التسلسل الهرمي
+     */
+    public function getCurrentCompanyId(): ?int
+    {
+        // التأكد من وجود سجل الموظف
+        if (!$this->employeeDetail) {
+            return null;
+        }
 
-    // التسلسل الآمن باستخدام المسارات الصحيحة (Organization)
-    return $this->employeeDetail->department?->branch?->company_id;
-}
+        // التسلسل الآمن باستخدام المسارات الصحيحة (Organization)
+        return $this->employeeDetail->department?->branch?->company_id;
+    }
 }

@@ -28,7 +28,7 @@ use App\Http\Controllers\Api\V1\Employee\NotificationController;
 // ==========================================
 // Epic 0: Authentication (بدون حماية)
 // ==========================================
-Route::post('login', [AuthController::class, 'login']);
+// Route::post('login', [AuthController::class, 'login']);
 
 
 // ==========================================
@@ -40,10 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Epic 1: Profile (الملف الشخصي)
     // ==========================================
     Route::get('profile', [ProfileController::class, 'show']);
-    Route::put('profile', [ProfileController::class, 'update']);
+    Route::post('profile', [ProfileController::class, 'update']);
     Route::post('change-password', [ProfileController::class, 'changePassword']);
     Route::post('change-phone', [ProfileController::class, 'changePhone']); 
-    Route::post('logout', [ProfileController::class, 'logout']);
+    // Route::post('logout', [ProfileController::class, 'logout']);
 
     // ==========================================
     // Dashboard (لوحة التحكم)

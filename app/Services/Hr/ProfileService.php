@@ -18,73 +18,72 @@ class ProfileService
         private UserProfileRepository $profileRepository
     ) {}
 
-    /**
-     * جلب البروفايل (الدالة المفقودة)
-     */
     public function getProfile(User $user): User
     {
         return $this->profileRepository->getUserWithProfile($user->id);
     }
 
-    /**
-     * تحديث البروفايل
-     */
-public function updateProfile(User $user, array $validated, $avatar = null): User
-{
-    $newAvatarPath = null;
+    public function updateProfile(User $user, array $validated, $avatar = null): User
+    {
+        $newAvatarPath = null;
 
-    // 1. رفع الملف خارج الـ Transaction (Resilience Pattern)
-    if ($avatar) {
-        // حذف الصورة القديمة إذا وجدت لتوفير المساحة
-        if ($user->profile && $user->profile->avatar) {
-            Storage::disk('public')->delete($user->profile->avatar);
+        if ($avatar) {
+            if ($user->profile && $user->profile->avatar) {
+                Storage::disk('public')->delete($user->profile->avatar);
+            }
+            $newAvatarPath = $avatar->store('avatars/' . $user->id, 'public');
         }
-        $newAvatarPath = $avatar->store('avatars/' . $user->id, 'public');
+
+        DB::beginTransaction();
+        try {
+            $profileData = [];
+
+            if (isset($validated['full_name'])) {
+                $profileData['full_name'] = $validated['full_name'];
+            }
+            if (isset($validated['national_id'])) {
+                $profileData['national_id'] = $validated['national_id'];
+            }
+            if (isset($validated['date_of_birth'])) {
+                $profileData['date_of_birth'] = $validated['date_of_birth'];
+            }
+            if ($newAvatarPath) {
+                $profileData['avatar'] = $newAvatarPath;
+            }
+
+            if (!empty($profileData)) {
+                // updateOrCreate بدل update() — يضمن إنشاء السجل إن لم يكن موجوداً أصلاً
+                $user->profile()->updateOrCreate(['user_id' => $user->id], $profileData);
+            }
+
+            DB::commit();
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+
+            if ($newAvatarPath) {
+                Storage::disk('public')->delete($newAvatarPath);
+            }
+
+            if ($e->errorInfo[1] == 1062) {
+                throw new Exception('رقم الهوية الوطنية مستخدم مسبقاً بحساب آخر.');
+            }
+
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($newAvatarPath) {
+                Storage::disk('public')->delete($newAvatarPath);
+            }
+
+            throw $e;
+        }
+
+        $user->load(['profile', 'employeeDetail']);
+
+        return $user;
     }
 
-    // 2. بدء Transaction لقاعدة البيانات
-    DB::beginTransaction();
-    try {
-        $profileData = [];
-        
-        // نحدّث فقط الحقول التي تم إرسالها فعلياً (بسبب استخدام sometimes في الـ Request)
-        if (isset($validated['full_name'])) {
-            $profileData['full_name'] = $validated['full_name'];
-        }
-        if (isset($validated['national_id'])) {
-            $profileData['national_id'] = $validated['national_id'];
-        }
-        if (isset($validated['date_of_birth'])) {
-            $profileData['date_of_birth'] = $validated['date_of_birth'];
-        }
-        if ($newAvatarPath) {
-            $profileData['avatar'] = $newAvatarPath;
-        }
-
-        // التأكد من أن هناك بيانات فعلية للتحديث قبل استدعاء قاعدة البيانات
-        if (!empty($profileData)) {
-            $user->profile()->update($profileData);
-        }
-
-        DB::commit();
-    } catch (\Exception $e) {
-        // ... باقي كود الـ catch
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        // Compensating Action: حذف الصورة الجديدة إذا فشلت قاعدة البيانات
-        if ($newAvatarPath) {
-            Storage::disk('public')->delete($newAvatarPath);
-        }
-
-        throw $e;
-    }
-
-    // إعادة تحميل العلاقات لإرجاع البيانات المحدثة في الـ Response
-    $user->load(['profile', 'employeeDetail']);
-    
-    return $user;
-}
     public function changePassword(array $data)
     {
         $user = $this->getAuthenticatedUser();
@@ -100,10 +99,20 @@ public function updateProfile(User $user, array $validated, $avatar = null): Use
     public function changePhone(array $data)
     {
         $user = $this->getAuthenticatedUser();
+
+        $exists = User::where('phone', $data['phone'])
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($exists) {
+            return ['success' => false, 'message' => 'رقم الهاتف مستخدم مسبقاً بحساب آخر.', 'code' => 422];
+        }
+
         $user->update(['phone' => $data['phone']]);
         return ['success' => true, 'message' => 'Phone changed successfully.', 'code' => 200];
     }
-        private function getAuthenticatedUser(): User
+
+    private function getAuthenticatedUser(): User
     {
         $user = User::find(Auth::id());
         if (!$user) {
@@ -111,13 +120,13 @@ public function updateProfile(User $user, array $validated, $avatar = null): Use
         }
         return $user;
     }
-        public function logout(Request $request)
+
+    public function logout(Request $request)
     {
         $user = $this->getAuthenticatedUser();
-        
-        // استخراج ID التوكن الحالي من الـ Bearer Token بشكل آمن
+
         $tokenId = explode('|', $request->bearerToken() ?? '')[0];
-        
+
         if ($tokenId) {
             $user->tokens()->where('id', $tokenId)->delete();
         }

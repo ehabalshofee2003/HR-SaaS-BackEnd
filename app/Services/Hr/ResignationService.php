@@ -5,10 +5,85 @@ namespace App\Services\Hr;
 use App\Models\Identity\User;
 use App\Repositories\Hr\ResignationRepository;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Exception;
 
 class ResignationService
 {
     public function __construct(private ResignationRepository $resignationRepository) {}
+
+    // ================= دوال Branch Manager (جديدة) =================
+
+    public function list(User $manager, array $filters)
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->resignationRepository->paginateForBranch($branchId, $filters);
+    }
+
+    public function getDetails(int $id, User $manager): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $resignation = $this->resignationRepository->findForBranch($id, $branchId);
+
+        if (!$resignation) {
+            throw new Exception('طلب الاستقالة غير موجود.', 404);
+        }
+
+        return $resignation;
+    }
+
+   public function accept(int $id, User $manager): object
+{
+    $branchId = $manager->getCurrentBranchId();
+    $resignation = $this->resignationRepository->findForBranch($id, $branchId);
+
+    if (!$resignation) {
+        throw new Exception('طلب الاستقالة غير موجود.', 404);
+    }
+
+    if ($resignation->status !== 'pending') {
+        throw new Exception('لا يمكن قبول استقالة تمت معالجتها بالفعل.');
+    }
+
+    $this->resignationRepository->updateStatusForBranch($id, [
+        'status' => 'approved',
+        'approved_by' => $manager->id,
+        'approved_at' => Carbon::now(),
+    ]);   // خلاف ذلك، التعليق يجب أن يحدث فعلياً بتاريخ last_working_date عبر Scheduled Task (لم يُبنَ بعد).
+        if (Carbon::parse($resignation->last_working_date)->lte(Carbon::today())) {
+            $this->resignationRepository->suspendUser($resignation->employee_user_id);
+        }
+
+        // TODO: جدولة تعليق الحساب تلقائياً بتاريخ last_working_date عبر Laravel Scheduler إذا كان بالمستقبل
+        // TODO: إشعار الموظف بقبول الاستقالة
+
+        return $this->resignationRepository->findForBranch($id, $branchId);
+    }
+
+   public function reject(int $id, User $manager, string $reason): object
+{
+    $branchId = $manager->getCurrentBranchId();
+    $resignation = $this->resignationRepository->findForBranch($id, $branchId);
+
+    if (!$resignation) {
+        throw new Exception('طلب الاستقالة غير موجود.', 404);
+    }
+
+    if ($resignation->status !== 'pending') {
+        throw new Exception('لا يمكن رفض استقالة تمت معالجتها بالفعل.');
+    }
+
+    $this->resignationRepository->updateStatusForBranch($id, [
+        'status' => 'rejected',
+        'rejected_by' => $manager->id,
+        'rejection_reason' => $reason,
+    ]);
+        // TODO: إشعار الموظف بالرفض
+
+        return $this->resignationRepository->findForBranch($id, $branchId);
+    }
+
+    // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
 
     public function submit(array $data)
     {
@@ -34,7 +109,7 @@ class ResignationService
         ];
     }
 
-    public function list()
+    public function list_Employee()
     {
         $user = $this->getAuthenticatedUser();
         return $this->resignationRepository->getEmployeeResignations($user->id);

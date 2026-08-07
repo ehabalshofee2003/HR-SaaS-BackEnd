@@ -4,14 +4,86 @@ namespace App\Services\Hr;
 
 use App\Repositories\Hr\ExceptionRequestRepository;
 use App\Http\Requests\Employee\StoreExceptionRequest;
+use App\Models\Identity\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Exception;
 
 class ExceptionRequestService
 {
     public function __construct(
         private ExceptionRequestRepository $repository
     ) {}
+
+    // ================= دوال Branch Manager (جديدة) =================
+
+    public function list(User $manager, array $filters)
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->repository->paginateForBranch($branchId, $filters);
+    }
+
+    public function getDetails(int $id, User $manager): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $request = $this->repository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('الطلب غير موجود.', 404);
+        }
+
+        return $request;
+    }
+
+    public function forwardToOwner(int $id, User $manager, string $note): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $request = $this->repository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('الطلب غير موجود.', 404);
+        }
+
+        if ($request->status !== 'supervisor_reviewed') {
+            throw new Exception('لا يمكن إحالة إلا الطلبات التي راجعها المشرف بالفعل.');
+        }
+
+        $this->repository->updateStatus($id, [
+            'status' => 'owner_reviewed',
+            'manager_note' => $note,
+        ]);
+
+        // TODO: إشعار المالك بالطلب المُحال (يتضمن manager_note بمحتوى الإشعار)
+
+        return $this->repository->findForBranch($id, $branchId);
+    }
+
+    public function reject(int $id, User $manager, string $reason): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $request = $this->repository->findForBranch($id, $branchId);
+
+        if (!$request) {
+            throw new Exception('الطلب غير موجود.', 404);
+        }
+
+        if ($request->status !== 'supervisor_reviewed') {
+            throw new Exception('لا يمكن الرفض إلا للطلبات التي راجعها المشرف بالفعل.');
+        }
+
+        $this->repository->updateStatus($id, [
+            'status' => 'rejected',
+            'approver_id' => $manager->id,
+            'approved_at' => now(),
+            'rejection_reason' => $reason,
+        ]);
+
+        // TODO: إشعار الموظف والمشرف بالرفض
+
+        return $this->repository->findForBranch($id, $branchId);
+    }
+
+    // ================= دوال Employee Mobile (الأصلية — لم تُمس، فقط اسم الدالة صُحح) =================
 
     public function getAll($user)
     {
@@ -35,7 +107,6 @@ class ExceptionRequestService
         $employeeId = $user->employeeDetail->id;
 
         $path = null;
-        // 1. رفع الملف خارج الـ Transaction (Resilience Pattern)
         if (isset($request->attachment)) {
             $path = $request->attachment->store('exceptions', 'public');
         }
@@ -61,7 +132,6 @@ class ExceptionRequestService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // 2. Compensating Action: حذف الملف إذا فشلت قاعدة البيانات
             if ($path) {
                 Storage::disk('public')->delete($path);
             }
@@ -77,9 +147,9 @@ class ExceptionRequestService
         $exceptionRequest = $this->repository->findEmployeeException((int)$id, $employeeId, $companyId);
 
         if (!$exceptionRequest || $exceptionRequest->status !== 'pending') {
-            return null; // سيتعامل معه الكنترولر لرجاع 404
+            return null;
         }
 
-        return $this->repository->updateStatus($exceptionRequest, 'cancelled') ? $exceptionRequest->refresh() : null;
+        return $this->repository->updateStatus_Legacy($exceptionRequest, 'cancelled') ? $exceptionRequest->refresh() : null;
     }
 }

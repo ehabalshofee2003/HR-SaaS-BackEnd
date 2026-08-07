@@ -23,7 +23,7 @@ class ResignationController extends Controller
 
     public function index(): JsonResponse
     {
-        $resignations = $this->resignationService->list();
+        $resignations = $this->resignationService->list_Employee();
         return ResignationResource::collection($resignations)->response();
     }
 

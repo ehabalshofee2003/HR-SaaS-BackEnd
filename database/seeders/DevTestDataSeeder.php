@@ -16,8 +16,9 @@ class DevTestDataSeeder extends Seeder
             AnnouncementTestSeeder::class,
             HrEpicTestSeeder::class, 
             TaskTestSeeder::class, // أضف هذا السطر
-
-
+            SupervisorTestSeeder::class, // أضف هذا السطر
+            EvaluationCriteriaTestSeeder::class, // أضف هذا السطر
+            LeaveTypesTestSeeder::class, // أضف هذا السطر
         ]);
 
         $this->command->info('✅ تم تثبيت كل بيانات الاختبار بنجاح!');

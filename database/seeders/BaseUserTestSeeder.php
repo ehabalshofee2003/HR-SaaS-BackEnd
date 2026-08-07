@@ -20,6 +20,8 @@ class BaseUserTestSeeder extends Seeder
     {
         $employeePhone = '0791234567';
         $supervisorPhone = '0799999999';
+        $branchManagerPhone = '0798888888';
+        $secondSupervisorPhone = '0797777777';
 
         if (User::where('phone', $employeePhone)->exists()) {
             $this->command->info('المستخدم التجريبي موجود مسبقاً.');
@@ -50,10 +52,43 @@ class BaseUserTestSeeder extends Seeder
             'name' => 'Main Branch'
         ]);
 
+        // 3.5. مدير الفرع (Branch Manager) — جديد لاختبار Epic Departments/Supervisors
+        $branchManager = User::create([
+            'phone' => $branchManagerPhone,
+            'password_hash' => Hash::make('123456'),
+            'user_type' => 'manager',
+            'status' => 'active',
+            'branch_id' => $branch->id,
+        ]);
+        UserProfile::create([
+            'user_id' => $branchManager->id,
+            'full_name' => 'Test Branch Manager',
+        ]);
+
         // 4. القسم
         $department = Department::create([
             'branch_id' => $branch->id, 
-            'name' => 'HR Dept'
+            'name' => 'HR Dept',
+            'supervisor_user_id' => $supervisor->id,
+        ]);
+
+        // 4.5. قسم ومشرف إضافيان — لاختبار Search/Filter/assign-supervisor/reset-password
+        $secondSupervisor = User::create([
+            'phone' => $secondSupervisorPhone,
+            'password_hash' => Hash::make('123456'),
+            'user_type' => 'supervisor',
+            'status' => 'active',
+            'branch_id' => $branch->id,
+        ]);
+        UserProfile::create([
+            'user_id' => $secondSupervisor->id,
+            'full_name' => 'Second Test Supervisor',
+        ]);
+
+        $secondDepartment = Department::create([
+            'branch_id' => $branch->id,
+            'name' => 'Sales Dept',
+            // بدون مشرف مبدئياً — لاختبار إنشاء قسم بدون مشرف واختبار assign-supervisor لاحقاً
         ]);
 
         // 5. إعداد وقت الدوام
@@ -80,7 +115,8 @@ class BaseUserTestSeeder extends Seeder
             'department_id' => $department->id, 
             'job_title' => 'Software Engineer', 
             'employment_status' => 'active',    
-            'hire_date' => now()->toDateString() 
+            'hire_date' => now()->toDateString(),
+            'supervisor_id' => $supervisor->id,
         ]);
                 // إنشاء نوع إجازة وهمي (مطلوب لإنشاء طلب الإجازة)
         \App\Models\Hr\LeaveType::firstOrCreate(
@@ -112,6 +148,9 @@ class BaseUserTestSeeder extends Seeder
         $this->command->warn("=====================================================");
         $this->command->warn("تم إنشاء البيانات الأساسية بنجاح!");
         $this->command->warn("Employee Phone: {$employeePhone} | Password: 123456");
+        $this->command->warn("Supervisor Phone: {$supervisorPhone} | Password: 123456");
+        $this->command->warn("Branch Manager Phone: {$branchManagerPhone} | Password: 123456");
+        $this->command->warn("Second Supervisor Phone: {$secondSupervisorPhone} | Password: 123456");
         $this->command->warn("=====================================================");
     }
 }
