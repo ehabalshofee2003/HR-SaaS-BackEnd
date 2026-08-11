@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\V1\BranchManager\PayrollController;
 use App\Http\Controllers\Api\V1\BranchManager\ComplaintController;
 use App\Http\Controllers\Api\V1\BranchManager\ResignationController;
 use App\Http\Controllers\Api\V1\BranchManager\AccountController;
+use App\Http\Controllers\Api\V1\BranchManager\AnnouncementController;
+use App\Http\Controllers\Api\V1\BranchManager\WorkshopController;
 
 // branchmanager routes
 
@@ -121,4 +123,22 @@ Route::prefix('branch-manager')->middleware(['auth:sanctum'])->group(function ()
     Route::put('/settings', [AccountController::class, 'updateSettings']);
     Route::get('/branch-data', [AccountController::class, 'branchData']);
     Route::put('/branch-data', [AccountController::class, 'updateBranchData']);
+});
+
+Route::prefix('branch-manager')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/announcements', [AnnouncementController::class, 'store']);
+    Route::get('/announcements/{id}/readers', [AnnouncementController::class, 'readers']);
+    Route::post('/announcements/{id}/archive', [AnnouncementController::class, 'archive']);
+    Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
+});
+
+Route::prefix('branch-manager')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/workshops', [WorkshopController::class, 'index']);
+    Route::post('/workshops', [WorkshopController::class, 'store']);
+    Route::get('/workshops/{id}', [WorkshopController::class, 'show']);
+    Route::put('/workshops/{id}', [WorkshopController::class, 'update']);
+    Route::post('/workshops/{id}/cancel', [WorkshopController::class, 'cancel']);
+    Route::get('/workshops/{id}/attendees', [WorkshopController::class, 'attendees']);
+    Route::post('/workshops/{id}/attendees/{user_id}/attend', [WorkshopController::class, 'markAttendance']);
 });

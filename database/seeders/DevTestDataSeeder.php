@@ -19,6 +19,8 @@ class DevTestDataSeeder extends Seeder
             SupervisorTestSeeder::class, // أضف هذا السطر
             EvaluationCriteriaTestSeeder::class, // أضف هذا السطر
             LeaveTypesTestSeeder::class, // أضف هذا السطر
+            EmployeeThreeYearPayrollSeeder::class, // أضف هذا السطر
+            
         ]);
 
         $this->command->info('✅ تم تثبيت كل بيانات الاختبار بنجاح!');
