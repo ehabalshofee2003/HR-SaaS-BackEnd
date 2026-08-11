@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\BranchManager\ExceptionRequestController;
 use App\Http\Controllers\Api\V1\BranchManager\PayrollController;
 use App\Http\Controllers\Api\V1\BranchManager\ComplaintController;
 use App\Http\Controllers\Api\V1\BranchManager\ResignationController;
+use App\Http\Controllers\Api\V1\BranchManager\AccountController;
 
 // branchmanager routes
 
@@ -111,7 +112,6 @@ Route::prefix('branch-manager')->middleware(['auth:sanctum'])->group(function ()
     Route::post('/resignations/{id}/reject', [ResignationController::class, 'reject']);
 });
 
-use App\Http\Controllers\Api\V1\BranchManager\AccountController;
 
 Route::prefix('branch-manager')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile', [AccountController::class, 'profile']);

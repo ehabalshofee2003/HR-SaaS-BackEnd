@@ -13,6 +13,7 @@ class ChangePhoneRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'current_password' => 'required|string',
             'phone' => 'required|string|unique:users,phone,' . Auth::id(),
         ];
     }

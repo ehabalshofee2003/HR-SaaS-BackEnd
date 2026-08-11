@@ -282,34 +282,47 @@ class PayrollService
         ];
     }
 
-    public function generatePdf($id)
-    {
-        $user = $this->getAuthenticatedUser();
-        $payroll = $this->payrollRepository->findEmployeePayrollById((int) $id, $user->id);
+public function generatePdf($id)
+{
+    $user = $this->getAuthenticatedUser();
 
-        if (!$payroll) {
-            return [
-                'success' => false,
-                'message' => 'Payroll record not found.',
-                'code' => 404,
-                'data' => null
-            ];
-        }
+    // نتحقق أولاً هل السجل موجود أصلاً (بغض النظر عن الحالة) لتمييز 404 عن "لم يُعتمد بعد"
+    $exists = $this->payrollRepository->findEmployeePayrollById((int) $id, $user->id);
 
-        $data = [
-            'payroll' => $payroll,
-            'employee' => $user->load(['profile', 'employeeDetail.department.branch.company'])
-        ];
-
-        $pdf = Pdf::loadView('pdfs.employee-payslip', $data);
-
+    if (!$exists) {
         return [
-            'success' => true,
-            'message' => 'PDF generated successfully.',
-            'code' => 200,
-            'data' => $pdf
+            'success' => false,
+            'message' => 'Payroll record not found.',
+            'code' => 404,
+            'data' => null
         ];
     }
+
+    $payroll = $this->payrollRepository->findEmployeePayrollForPdf((int) $id, $user->id);
+
+    if (!$payroll) {
+        return [
+            'success' => false,
+            'message' => 'لا يمكن تحميل كشف راتب لم يُعتمد بعد من مدير الفرع.',
+            'code' => 422,
+            'data' => null
+        ];
+    }
+
+    $data = [
+        'payroll' => $payroll,
+        'employee' => $user->load(['profile', 'employeeDetail.department.branch.company'])
+    ];
+
+    $pdf = Pdf::loadView('pdfs.employee-payslip', $data);
+
+    return [
+        'success' => true,
+        'message' => 'PDF generated successfully.',
+        'code' => 200,
+        'data' => $pdf
+    ];
+}
 
     private function getAuthenticatedUser(): User
     {

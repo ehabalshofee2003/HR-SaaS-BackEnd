@@ -18,7 +18,7 @@ class PayrollController extends Controller
         $payrolls = $this->payrollService->getPayrolls();
         
         // هذا يرجع الشكل القياسي المثالي لـ Flutter (data, links, meta) بدون تكرار
-        return PayrollListResource::collection($payrolls)->response();
+        return PayrollDetailResource::collection($payrolls)->response();
     }
 
     public function show($id): JsonResponse
@@ -37,8 +37,7 @@ class PayrollController extends Controller
 
     public function pdf($id)
     {
-        $result = $this->payrollService->generatePdf($id);
-
+    $result = $this->payrollService->generatePdf((int) $id);
         if (!$result['success']) {
             return response()->json(['message' => $result['message']], $result['code']);
         }

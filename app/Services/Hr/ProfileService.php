@@ -100,6 +100,10 @@ class ProfileService
     {
         $user = $this->getAuthenticatedUser();
 
+        if (!Hash::check($data['current_password'], $user->password_hash)) {
+            return ['success' => false, 'message' => 'كلمة المرور الحالية غير صحيحة.', 'code' => 401];
+        }
+
         $exists = User::where('phone', $data['phone'])
             ->where('id', '!=', $user->id)
             ->exists();
