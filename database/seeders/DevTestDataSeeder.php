@@ -20,6 +20,7 @@ class DevTestDataSeeder extends Seeder
             EvaluationCriteriaTestSeeder::class, // أضف هذا السطر
             LeaveTypesTestSeeder::class, // أضف هذا السطر
             EmployeeThreeYearPayrollSeeder::class, // أضف هذا السطر
+            ExceptionTypesSeeder::class,
             
         ]);
 

@@ -15,17 +15,16 @@ class PayrollTestSeeder extends Seeder
     {
         $user = User::where('phone', '0791234567')->first();
         if (!$user) {
-            $this->command->error("المستخدم التجريبي غير موجود!");
+            $this->command->error('Test user not found!');
             return;
         }
 
         $companyId = $user->getCurrentCompanyId();
         if (!$companyId) {
-            $this->command->error("المستخدم ليس لديه تسلسل هرمي!");
+            $this->command->error('User has no company in its hierarchy!');
             return;
         }
 
-        // نستخدم الشهر الماضي لنجعله "آخر راتب"
         $lastMonth = now()->subMonth();
 
         $period = PayrollPeriod::firstOrCreate(
@@ -33,7 +32,7 @@ class PayrollTestSeeder extends Seeder
             [
                 'start_date' => $lastMonth->startOfMonth()->toDateString(),
                 'end_date' => $lastMonth->endOfMonth()->toDateString(),
-                'status' => 'paid', // حالة مدفوعة لكي يظهر في الداشبورد
+                'status' => 'paid',
             ]
         );
 
@@ -51,9 +50,9 @@ class PayrollTestSeeder extends Seeder
         );
 
         $components = [
-            ['name' => 'الراتب الأساسي', 'component_type' => 'base_salary', 'amount' => 1500.00],
-            ['name' => 'بدل نقل', 'component_type' => 'allowance', 'amount' => 50.00],
-            ['name' => 'خصم تأمينات', 'component_type' => 'deduction', 'amount' => 100.00],
+            ['name' => 'Base Salary', 'component_type' => 'base_salary', 'amount' => 1500.00],
+            ['name' => 'Transport Allowance', 'component_type' => 'allowance', 'amount' => 50.00],
+            ['name' => 'Insurance Deduction', 'component_type' => 'deduction', 'amount' => 100.00],
         ];
 
         foreach ($components as $component) {
@@ -63,6 +62,6 @@ class PayrollTestSeeder extends Seeder
             );
         }
 
-        $this->command->info("✅ تم إنشاء بيانات الرواتب بنجاح!");
+        $this->command->info('✅ Payroll test data created successfully!');
     }
 }

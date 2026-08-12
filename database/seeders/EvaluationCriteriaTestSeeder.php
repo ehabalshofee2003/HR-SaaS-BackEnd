@@ -10,24 +10,24 @@ class EvaluationCriteriaTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::where('name', 'Badran Poultry Test')->first();
+        $company = Company::where('name', 'Nova Retail Group')->first();
 
         if (!$company) {
-            $this->command->error('الشركة التجريبية غير موجودة. شغّل BaseUserTestSeeder أولاً.');
+            $this->command->error('Test company not found. Run BaseUserTestSeeder first.');
             return;
         }
 
         if (DB::table('evaluation_criteria')->where('company_id', $company->id)->exists()) {
-            $this->command->info('المعايير موجودة مسبقاً لهذه الشركة.');
+            $this->command->info('Evaluation criteria already exist for this company.');
             return;
         }
 
         $criteria = [
-            ['name' => 'الجودة', 'description' => 'جودة العمل المُنجز', 'weight' => 20],
-            ['name' => 'الإنتاجية', 'description' => 'كمية العمل المُنجز بالوقت المحدد', 'weight' => 20],
-            ['name' => 'الحضور', 'description' => 'الالتزام بمواعيد الدوام', 'weight' => 20],
-            ['name' => 'التعاون', 'description' => 'العمل الجماعي مع الزملاء', 'weight' => 20],
-            ['name' => 'الالتزام', 'description' => 'الانضباط والالتزام بالتعليمات', 'weight' => 20],
+            ['name' => 'Quality', 'description' => 'Quality of completed work', 'weight' => 20],
+            ['name' => 'Productivity', 'description' => 'Amount of work completed within the deadline', 'weight' => 20],
+            ['name' => 'Attendance', 'description' => 'Punctuality and adherence to work hours', 'weight' => 20],
+            ['name' => 'Collaboration', 'description' => 'Teamwork with colleagues', 'weight' => 20],
+            ['name' => 'Discipline', 'description' => 'Following instructions and workplace conduct', 'weight' => 20],
         ];
 
         foreach ($criteria as $item) {
@@ -42,6 +42,6 @@ class EvaluationCriteriaTestSeeder extends Seeder
             ]);
         }
 
-        $this->command->warn('تم زرع 5 معايير تقييم للشركة التجريبية بنجاح.');
+        $this->command->warn('✅ 5 evaluation criteria seeded for the test company.');
     }
 }

@@ -15,7 +15,7 @@ class ResignationTestSeeder extends Seeder
         $supervisor = User::where('phone', '0799999999')->first();
 
         if (!$user || !$supervisor) {
-            $this->command->error("المستخدم التجريبي أو المشرف غير موجود!");
+            $this->command->error('Test employee or supervisor not found!');
             return;
         }
 
@@ -23,12 +23,12 @@ class ResignationTestSeeder extends Seeder
             ['employee_user_id' => $user->id, 'status' => 'pending'],
             [
                 'supervisor_user_id' => $supervisor->id,
-                'reason' => 'اختبار طلب استقالة من النظام',
+                'reason' => 'Test resignation request from the system',
                 'notice_date' => Carbon::today()->toDateString(),
                 'last_working_date' => Carbon::today()->addMonth()->toDateString(),
             ]
         );
 
-        $this->command->info("✅ تم إنشاء طلب الاستقالة الاختباري بنجاح!");
+        $this->command->info('✅ Test resignation request created successfully!');
     }
 }

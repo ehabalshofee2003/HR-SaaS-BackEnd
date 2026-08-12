@@ -84,4 +84,8 @@ class ExceptionRequestController extends Controller
             'data'    => new ExceptionRequestResource($exception->load('exceptionType'))
         ]);
     }
+    public function formData()
+{
+    return response()->json(['data' => $this->service->getFormData()]);
+}
 }

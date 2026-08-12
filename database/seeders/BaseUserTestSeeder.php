@@ -24,35 +24,25 @@ class BaseUserTestSeeder extends Seeder
         $secondSupervisorPhone = '0797777777';
 
         if (User::where('phone', $employeePhone)->exists()) {
-            $this->command->info('المستخدم التجريبي موجود مسبقاً.');
+            $this->command->info('Test data already exists.');
             return;
         }
 
-        // 1. إنشاء المشرف (لأن الشركة تحتاج owner_user_id)
         $supervisor = User::create([
-            'phone' => $supervisorPhone, 
+            'phone' => $supervisorPhone,
             'password_hash' => Hash::make('123456'),
-            'user_type' => 'supervisor', // حقل إلزامي من الـ Migration
-            'status' => 'active',         // حقل إلزامي من الـ Migration
+            'user_type' => 'supervisor',
+            'status' => 'active',
         ]);
-        UserProfile::create([
-            'user_id' => $supervisor->id, 
-            'full_name' => 'Test Supervisor', // تم تصحيح الاسم ليطابق الجدول
-        ]);
+        UserProfile::create(['user_id' => $supervisor->id, 'full_name' => 'James Carter']);
 
-        // 2. الشركة (مع owner_user_id)
         $company = Company::create([
-            'name' => 'Badran Poultry Test', 
-            'owner_user_id' => $supervisor->id, 
+            'name' => 'Nova Retail Group',
+            'owner_user_id' => $supervisor->id,
         ]);
 
-        // 3. الفرع
-        $branch = Branch::create([
-            'company_id' => $company->id, 
-            'name' => 'Main Branch'
-        ]);
+        $branch = Branch::create(['company_id' => $company->id, 'name' => 'Downtown Branch']);
 
-        // 3.5. مدير الفرع (Branch Manager) — جديد لاختبار Epic Departments/Supervisors
         $branchManager = User::create([
             'phone' => $branchManagerPhone,
             'password_hash' => Hash::make('123456'),
@@ -60,19 +50,14 @@ class BaseUserTestSeeder extends Seeder
             'status' => 'active',
             'branch_id' => $branch->id,
         ]);
-        UserProfile::create([
-            'user_id' => $branchManager->id,
-            'full_name' => 'Test Branch Manager',
-        ]);
+        UserProfile::create(['user_id' => $branchManager->id, 'full_name' => 'Michael Reed']);
 
-        // 4. القسم
         $department = Department::create([
-            'branch_id' => $branch->id, 
-            'name' => 'HR Dept',
+            'branch_id' => $branch->id,
+            'name' => 'Human Resources',
             'supervisor_user_id' => $supervisor->id,
         ]);
 
-        // 4.5. قسم ومشرف إضافيان — لاختبار Search/Filter/assign-supervisor/reset-password
         $secondSupervisor = User::create([
             'phone' => $secondSupervisorPhone,
             'password_hash' => Hash::make('123456'),
@@ -80,77 +65,41 @@ class BaseUserTestSeeder extends Seeder
             'status' => 'active',
             'branch_id' => $branch->id,
         ]);
-        UserProfile::create([
-            'user_id' => $secondSupervisor->id,
-            'full_name' => 'Second Test Supervisor',
-        ]);
+        UserProfile::create(['user_id' => $secondSupervisor->id, 'full_name' => 'Sarah Bennett']);
 
         $secondDepartment = Department::create([
             'branch_id' => $branch->id,
-            'name' => 'Sales Dept',
-            // بدون مشرف مبدئياً — لاختبار إنشاء قسم بدون مشرف واختبار assign-supervisor لاحقاً
+            'name' => 'Sales',
         ]);
 
-        // 5. إعداد وقت الدوام
         CompanySetting::firstOrCreate(
-            ['company_id' => $company->id, 'key' => 'work_start_time'], 
+            ['company_id' => $company->id, 'key' => 'work_start_time'],
             ['value' => '08:00', 'type' => 'string']
         );
 
-        // 6. إنشاء الموظف
         $user = User::create([
-            'phone' => $employeePhone, 
+            'phone' => $employeePhone,
             'password_hash' => Hash::make('123456'),
-            'user_type' => 'employee',   // حقل إلزامي
-            'status' => 'active',         // حقل إلزامي
+            'user_type' => 'employee',
+            'status' => 'active',
         ]);
-        UserProfile::create([
-            'user_id' => $user->id, 
-            'full_name' => 'Weaam Shakra', // تم تصحيح الاسم
-        ]);
-        
-        // 7. تفاصيل الموظف (تم إزالة employee_id_number لأنه غير موجود في المايجريشن)
+        UserProfile::create(['user_id' => $user->id, 'full_name' => 'Daniel Foster']);
+
         EmployeeDetail::create([
-            'user_id' => $user->id, 
-            'department_id' => $department->id, 
-            'job_title' => 'Software Engineer', 
-            'employment_status' => 'active',    
+            'user_id' => $user->id,
+            'department_id' => $department->id,
+            'job_title' => 'Software Engineer',
+            'employment_status' => 'active',
             'hire_date' => now()->toDateString(),
             'supervisor_id' => $supervisor->id,
         ]);
-                // إنشاء نوع إجازة وهمي (مطلوب لإنشاء طلب الإجازة)
-        \App\Models\Hr\LeaveType::firstOrCreate(
-            ['company_id' => $company->id, 'code' => 'annual'],
-            [
-                'name' => 'إجازة سنوية',
-                'description' => 'إجازة سنوية مدفوعة',
-                'is_paid' => true,
-                'max_days_per_year' => 15,
-                'requires_attachment' => false,
-                'is_active' => true,
-            ]
-        );
-        // 8. سياسة الإجازات والرصيد
-        $policy = LeavePolicy::create([
-            'company_id' => $company->id,
-            'leave_type' => 'annual',
-            'days_per_year' => 15,
-            'is_carry_forward' => true,
-        ]);
 
-        LeaveBalance::create([
-            'employee_user_id' => $user->id,
-            'policy_id' => $policy->id,
-            'year' => now()->year,
-            'remaining_days' => 12.5,
-        ]);
-
-        $this->command->warn("=====================================================");
-        $this->command->warn("تم إنشاء البيانات الأساسية بنجاح!");
-        $this->command->warn("Employee Phone: {$employeePhone} | Password: 123456");
-        $this->command->warn("Supervisor Phone: {$supervisorPhone} | Password: 123456");
-        $this->command->warn("Branch Manager Phone: {$branchManagerPhone} | Password: 123456");
-        $this->command->warn("Second Supervisor Phone: {$secondSupervisorPhone} | Password: 123456");
-        $this->command->warn("=====================================================");
+        $this->command->warn('=====================================================');
+        $this->command->warn('Test data created successfully!');
+        $this->command->warn("Employee: {$employeePhone} | Password: 123456 | Daniel Foster");
+        $this->command->warn("Supervisor: {$supervisorPhone} | Password: 123456 | James Carter");
+        $this->command->warn("Branch Manager: {$branchManagerPhone} | Password: 123456 | Michael Reed");
+        $this->command->warn("Second Supervisor: {$secondSupervisorPhone} | Password: 123456 | Sarah Bennett");
+        $this->command->warn('=====================================================');
     }
 }

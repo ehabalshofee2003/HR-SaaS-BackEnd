@@ -64,9 +64,9 @@ class LeaveBalanceRepository
             ->selectRaw('SUM(leave_policies.days_per_year) as total, SUM(leave_balances.remaining_days) as remaining')
             ->first();
 
-        return [
-            'total_days' => (float) ($result->total ?? 0),
-            'remaining_days' => (float) ($result->remaining ?? 0),
-        ];
+    return [
+        'total_days' => (int) ($result->total ?? 0),
+        'remaining_days' => (int) ($result->remaining ?? 0),
+    ];
     }
 }

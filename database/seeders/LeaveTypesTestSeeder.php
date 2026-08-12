@@ -13,51 +13,23 @@ class LeaveTypesTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::where('name', 'Badran Poultry Test')->first();
+        $company = Company::where('name', 'Nova Retail Group')->first();
 
         if (!$company) {
-            $this->command->error('الشركة التجريبية غير موجودة. شغّل BaseUserTestSeeder أولاً.');
+            $this->command->error('Test company not found. Run BaseUserTestSeeder first.');
             return;
         }
 
-        $employeePhone = '0791234567';
-        $employee = User::where('phone', $employeePhone)->first();
+        $employee = User::where('phone', '0791234567')->first();
 
         $types = [
-            [
-                'code' => 'sick',
-                'name' => 'إجازة مرضية',
-                'description' => 'إجازة مرضية مدفوعة',
-                'is_paid' => true,
-                'max_days_per_year' => 14,
-                'requires_attachment' => true,
-                'days_per_year' => 14,
-                'is_carry_forward' => false,
-            ],
-            [
-                'code' => 'emergency',
-                'name' => 'إجازة طارئة',
-                'description' => 'إجازة طارئة مدفوعة',
-                'is_paid' => true,
-                'max_days_per_year' => 5,
-                'requires_attachment' => false,
-                'days_per_year' => 5,
-                'is_carry_forward' => false,
-            ],
-            [
-                'code' => 'unpaid',
-                'name' => 'إجازة بدون راتب',
-                'description' => 'إجازة غير مدفوعة، لا تُخصم من أي رصيد',
-                'is_paid' => false,
-                'max_days_per_year' => 30,
-                'requires_attachment' => false,
-                'days_per_year' => 0,
-                'is_carry_forward' => false,
-            ],
+            ['code' => 'annual', 'name' => 'Annual Leave', 'description' => 'Paid annual leave', 'is_paid' => true, 'max_days_per_year' => 14, 'requires_attachment' => false, 'days_per_year' => 14],
+            ['code' => 'sick', 'name' => 'Sick Leave', 'description' => 'Paid sick leave', 'is_paid' => true, 'max_days_per_year' => 14, 'requires_attachment' => true, 'days_per_year' => 14],
+            ['code' => 'emergency', 'name' => 'Emergency Leave', 'description' => 'Paid emergency leave', 'is_paid' => true, 'max_days_per_year' => 5, 'requires_attachment' => false, 'days_per_year' => 5],
         ];
 
         foreach ($types as $type) {
-            $leaveType = LeaveType::firstOrCreate(
+            $leaveType = LeaveType::updateOrCreate(
                 ['company_id' => $company->id, 'code' => $type['code']],
                 [
                     'name' => $type['name'],
@@ -69,27 +41,19 @@ class LeaveTypesTestSeeder extends Seeder
                 ]
             );
 
-            $policy = LeavePolicy::firstOrCreate(
+            $policy = LeavePolicy::updateOrCreate(
                 ['company_id' => $company->id, 'leave_type' => $type['code']],
-                [
-                    'days_per_year' => $type['days_per_year'],
-                    'is_carry_forward' => $type['is_carry_forward'],
-                ]
+                ['days_per_year' => $type['days_per_year'], 'is_carry_forward' => false]
             );
 
-            // رصيد ابتدائي للموظف التجريبي (باستثناء unpaid التي لا تحتاج رصيداً فعلياً)
-            if ($employee && $type['code'] !== 'unpaid') {
-                LeaveBalance::firstOrCreate(
-                    [
-                        'employee_user_id' => $employee->id,
-                        'policy_id' => $policy->id,
-                        'year' => now()->year,
-                    ],
+            if ($employee) {
+                LeaveBalance::updateOrCreate(
+                    ['employee_user_id' => $employee->id, 'policy_id' => $policy->id, 'year' => now()->year],
                     ['remaining_days' => $type['days_per_year']]
                 );
             }
         }
 
-        $this->command->warn('تم زرع أنواع وسياسات وأرصدة sick / emergency / unpaid بنجاح.');
+        $this->command->warn('✅ Leave types (English) seeded: Annual (14), Sick (14), Emergency (5).');
     }
 }

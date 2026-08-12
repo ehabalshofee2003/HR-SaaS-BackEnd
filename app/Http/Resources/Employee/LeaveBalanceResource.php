@@ -15,9 +15,9 @@ class LeaveBalanceResource extends JsonResource
             'id' => $this->id,
             'leave_type' => $policy?->leave_type, // annual, sick, emergency
             'leave_type_label' => $this->translateType($policy?->leave_type),
-            'total_days' => (float) ($policy?->days_per_year ?? 0),
-            'remaining_days' => (float) $this->remaining_days,
-            'used_days' => (float) (($policy?->days_per_year ?? 0) - $this->remaining_days),
+            'total_days' => (int) ($policy?->days_per_year ?? 0),
+            'remaining_days' => (int) $this->remaining_days,
+            'used_days' => (int) (($policy?->days_per_year ?? 0) - $this->remaining_days),
         ];
     }
 

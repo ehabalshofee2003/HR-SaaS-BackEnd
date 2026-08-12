@@ -13,7 +13,7 @@ class AnnouncementTestSeeder extends Seeder
     {
         $user = User::where('phone', '0791234567')->first();
         if (!$user) {
-            $this->command->error("المستخدم التجريبي غير موجود!");
+            $this->command->error('Test user not found!');
             return;
         }
 
@@ -21,10 +21,10 @@ class AnnouncementTestSeeder extends Seeder
         $supervisor = User::where('phone', '0799999999')->first();
 
         Announcement::firstOrCreate(
-            ['company_id' => $companyId, 'target_type' => 'all', 'title' => 'إعلان هام: توزيع الحوافز'],
+            ['company_id' => $companyId, 'target_type' => 'all', 'title' => 'Important: Bonus Distribution'],
             [
                 'created_by' => $supervisor ? $supervisor->id : $user->id,
-                'content' => 'تم اعتماد حوافز نهاية الشهر لجميع موظفي الفرع الرئيسي. يرجى مراجعة كشوف الرواتب.',
+                'content' => 'End-of-month bonuses have been approved for all employees at the main branch. Please review your payslip.',
                 'target_id' => null,
                 'start_date' => Carbon::today()->toDateString(),
                 'end_date' => Carbon::today()->addDays(7)->toDateString(),
@@ -32,6 +32,6 @@ class AnnouncementTestSeeder extends Seeder
             ]
         );
 
-        $this->command->info("✅ تم إنشاء بيانات الإعلانات بنجاح!");
+        $this->command->info('✅ Announcement test data created successfully!');
     }
 }

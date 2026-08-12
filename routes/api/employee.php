@@ -48,7 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // Dashboard (لوحة التحكم)
     // ==========================================
-
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // ==========================================
@@ -87,6 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Epic 5: Exception Requests (طلبات الاستثناء) - قيد التنفيذ
     // ==========================================
     Route::prefix('exception-requests')->group(function () {
+        Route::get('exception-requests/form-data', [ExceptionRequestController::class, 'formData']);
         Route::get('/', [ExceptionRequestController::class, 'index']);
         Route::post('/', [ExceptionRequestController::class, 'store']);
         Route::get('/{id}', [ExceptionRequestController::class, 'show']);

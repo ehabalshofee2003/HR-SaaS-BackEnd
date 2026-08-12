@@ -90,4 +90,12 @@ class ExceptionRequestRepository
     {
         return $exceptionRequest->update(['status' => $status]);
     }
+    public function getActiveTypes(): array
+{
+    return DB::table('exception_types')
+        ->where('is_active', true)
+        ->select('id', 'name', 'slug')
+        ->get()
+        ->toArray();
+}
 }

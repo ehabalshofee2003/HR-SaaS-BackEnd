@@ -18,10 +18,10 @@ class PayrollBulkTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::where('name', 'Badran Poultry Test')->first();
+        $company = Company::where('name', 'Nova Retail Group')->first();
 
         if (!$company) {
-            $this->command->error('الشركة التجريبية غير موجودة. شغّل BaseUserTestSeeder أولاً.');
+            $this->command->error('Test company not found. Run BaseUserTestSeeder first.');
             return;
         }
 
@@ -30,24 +30,24 @@ class PayrollBulkTestSeeder extends Seeder
         })->get();
 
         if ($departments->isEmpty()) {
-            $this->command->error('لا توجد أقسام بالشركة التجريبية.');
+            $this->command->error('No departments found for the test company.');
             return;
         }
 
         $jobTitles = ['Sales Rep', 'Accountant', 'Cashier', 'Warehouse Staff', 'Driver', 'Customer Service', 'HR Assistant', 'Technician'];
-        $firstNames = ['Ahmad', 'Mohammad', 'Sara', 'Layla', 'Omar', 'Nour', 'Rami', 'Dina', 'Khaled', 'Maya', 'Yousef', 'Reem', 'Bilal', 'Hala', 'Fadi'];
-        $lastNames = ['Al-Ahmad', 'Hassan', 'Khalil', 'Saleh', 'Youssef', 'Ibrahim', 'Nasser', 'Aziz', 'Mustafa', 'Karim'];
+        $firstNames = ['James', 'Michael', 'Sarah', 'Laura', 'Oliver', 'Nora', 'Ryan', 'Diana', 'Kevin', 'Maya', 'Joseph', 'Rachel', 'Brian', 'Hailey', 'Frank'];
+        $lastNames = ['Anderson', 'Harris', 'Collins', 'Sullivan', 'Young', 'Ibrahim', 'Nash', 'Adams', 'Mitchell', 'Carter'];
 
         $employeeCount = 25;
         $createdEmployees = [];
 
-        $this->command->info("جاري إنشاء {$employeeCount} موظف وهمي...");
+        $this->command->info("Creating {$employeeCount} fake employees...");
 
         for ($i = 1; $i <= $employeeCount; $i++) {
             $phone = '097' . str_pad((string) (1000000 + $i), 7, '0', STR_PAD_LEFT);
 
             if (User::where('phone', $phone)->exists()) {
-                continue; // تفادي التكرار عند إعادة تشغيل السيدر
+                continue;
             }
 
             $department = $departments->random();
@@ -81,13 +81,11 @@ class PayrollBulkTestSeeder extends Seeder
             $createdEmployees[] = ['user' => $user, 'detail' => $employeeDetail, 'salary' => $basicSalary];
         }
 
-        $this->command->info('تم إنشاء ' . count($createdEmployees) . ' موظف. جاري إنشاء رواتب 6 أشهر لكل منهم...');
+        $this->command->info(count($createdEmployees) . ' employees created. Generating 6 months of payroll for each...');
 
-        // إنشاء رواتب لآخر 6 أشهر، بحالات مختلفة لاختبار كل السيناريوهات
         for ($monthsAgo = 5; $monthsAgo >= 0; $monthsAgo--) {
             $targetMonth = Carbon::now()->subMonths($monthsAgo);
 
-            // آخر شهر يبقى Draft (لم يُعتمد بعد)، قبله Approved، الباقي Paid
             $periodStatus = $monthsAgo === 0 ? 'draft' : ($monthsAgo === 1 ? 'approved' : 'paid');
             $recordStatus = $periodStatus;
 
@@ -119,27 +117,27 @@ class PayrollBulkTestSeeder extends Seeder
                 );
 
                 PayrollRecordDetail::firstOrCreate(
-                    ['record_id' => $record->id, 'name' => 'الراتب الأساسي'],
+                    ['record_id' => $record->id, 'name' => 'Base Salary'],
                     ['component_type' => 'base_salary', 'amount' => $emp['salary']]
                 );
 
                 if ($deductions > 0) {
                     PayrollRecordDetail::firstOrCreate(
-                        ['record_id' => $record->id, 'name' => 'خصومات متنوعة'],
+                        ['record_id' => $record->id, 'name' => 'Miscellaneous Deductions'],
                         ['component_type' => 'deduction', 'amount' => $deductions]
                     );
                 }
 
                 if ($bonuses > 0) {
                     PayrollRecordDetail::firstOrCreate(
-                        ['record_id' => $record->id, 'name' => 'مكافأة أداء'],
+                        ['record_id' => $record->id, 'name' => 'Performance Bonus'],
                         ['component_type' => 'bonus', 'amount' => $bonuses]
                     );
                 }
             }
         }
 
-        $this->command->warn('✅ تم إنشاء ' . count($createdEmployees) . ' موظف وهمي + رواتب 6 أشهر لكل منهم بنجاح.');
-        $this->command->warn('كلمة مرور كل الموظفين الوهميين: 123456');
+        $this->command->warn('✅ ' . count($createdEmployees) . ' employees + 6 months of payroll each created successfully.');
+        $this->command->warn('Password for all fake employees: 123456');
     }
 }

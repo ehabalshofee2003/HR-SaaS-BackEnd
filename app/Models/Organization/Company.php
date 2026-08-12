@@ -16,9 +16,12 @@ use App\Models\Payroll\SalaryTemplate;
 use App\Models\Support\Announcement;
 use App\Models\Support\Notification;
 use App\Models\Support\SupportTicket;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends BaseModel
 {
+    use SoftDeletes; // ⚠️ تأكد من وجود هذا السطر
+
     protected $table = 'companies';
 
     protected $fillable = [

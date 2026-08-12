@@ -12,37 +12,34 @@ class TaskTestSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * يعتمد هذا السيدر على وجود بيانات BaseUserTestSeeder (الموظف 0791234567 والمشرف 0799999999)
+     * Depends on BaseUserTestSeeder (employee 0791234567 and supervisor 0799999999)
      */
     public function run(): void
     {
-        // 1. سحب البيانات الأساسية لضمان صحة الـ Foreign Keys
         $employee = User::where('phone', '0791234567')->first();
         $supervisor = User::where('phone', '0799999999')->first();
         $company = Company::first();
 
         if (!$employee || !$supervisor || !$company || !$employee->employeeDetail) {
-            $this->command->error('خطأ: يجب تشغيل BaseUserTestSeeder أولاً لإنشاء المستخدمين والشركة.');
+            $this->command->error('Error: run BaseUserTestSeeder first to create the users and company.');
             return;
         }
 
-        $employeeDetailId = $employee->employeeDetail->id;
-        $supervisorId = $supervisor->id;
         $companyId = $company->id;
+        $supervisorId = $supervisor->id;
 
         $now = Carbon::now();
 
-        // 2. مصفوفة المهام الوهمية
         $tasks = [
             [
                 'company_id'        => $companyId,
                 'employee_user_id'  => $employee->id,
                 'supervisor_user_id'=> $supervisorId,
-                'title'             => 'مراجعة تقارير المبيعات اليومية',
-                'description'       => 'مراجعة تقارير مبيعات الفترة الصباحية والتأكد من تطابقها مع النظام المحاسبي للشركة.',
+                'title'             => 'Review daily sales reports',
+                'description'       => 'Review the morning shift sales reports and confirm they match the accounting system.',
                 'type'              => 'daily',
                 'status'            => 'pending',
-                'priority'          => 'medium', // أولوية متوسطة
+                'priority'          => 'medium',
                 'due_date'          => $now->copy()->addDay()->setTime(16, 0),
                 'completed_at'      => null,
                 'reward_amount'     => 0,
@@ -53,11 +50,11 @@ class TaskTestSeeder extends Seeder
                 'company_id'        => $companyId,
                 'employee_user_id'  => $employee->id,
                 'supervisor_user_id'=> $supervisorId,
-                'title'             => 'تحضير عرض تقديمي لاجتماع الإدارة',
-                'description'       => 'إعداد شرائح بوربوينت تحتوي على إنجازات قسم الموارد البشرية للربع الحالي وعرضها على المدير.',
+                'title'             => 'Prepare presentation for management meeting',
+                'description'       => 'Prepare slides covering the HR department achievements for the current quarter and present them to the manager.',
                 'type'              => 'ad_hoc',
                 'status'            => 'in_progress',
-                'priority'          => 'high', // أولوية عالية (لأنه فيه مكافأة ومهم)
+                'priority'          => 'high',
                 'due_date'          => $now->copy()->addDays(3)->setTime(12, 0),
                 'completed_at'      => null,
                 'reward_amount'     => 5000.00,
@@ -68,11 +65,11 @@ class TaskTestSeeder extends Seeder
                 'company_id'        => $companyId,
                 'employee_user_id'  => $employee->id,
                 'supervisor_user_id'=> $supervisorId,
-                'title'             => 'تسجيل حضور الورشة التدريبية',
-                'description'       => 'تسجيل حضور الموظفين الذين حضروا ورشة الأمن السيبراني يدوياً نظراً لعطل في جهاز البصمة.',
+                'title'             => 'Log workshop attendance manually',
+                'description'       => 'Manually log attendance for employees who attended the cybersecurity workshop, due to a fingerprint device malfunction.',
                 'type'              => 'daily',
                 'status'            => 'completed',
-                'priority'          => 'low', // أولوية منخفضة (لأنها مكتملة)
+                'priority'          => 'low',
                 'due_date'          => $now->copy()->subDay()->setTime(18, 0),
                 'completed_at'      => $now->copy()->subDay()->setTime(17, 30),
                 'reward_amount'     => 0,
@@ -83,11 +80,11 @@ class TaskTestSeeder extends Seeder
                 'company_id'        => $companyId,
                 'employee_user_id'  => $employee->id,
                 'supervisor_user_id'=> $supervisorId,
-                'title'             => 'إصلاح خطأ في حسابات المكافآت',
-                'description'       => 'هناك خطأ في حساب مكافأة الموظفين الذين عملوا في العطل، يجب مراجعة الـ Logic في النظام وإصلاحه فوراً.',
+                'title'             => 'Fix bonus calculation error',
+                'description'       => 'There is a bug in the bonus calculation for employees who worked holidays — review and fix the logic immediately.',
                 'type'              => 'ad_hoc',
                 'status'            => 'pending',
-                'priority'          => 'high', // أولوية عالية (متأخرة ومهمة)
+                'priority'          => 'high',
                 'due_date'          => $now->copy()->subDays(2)->setTime(10, 0),
                 'completed_at'      => null,
                 'reward_amount'     => 10000.00,
@@ -95,9 +92,9 @@ class TaskTestSeeder extends Seeder
                 'updated_at'        => $now->copy()->subDays(5),
             ],
         ];
-        // 3. زراعة البيانات في قاعدة البيانات
+
         DB::table('tasks')->insert($tasks);
-        
-        $this->command->info('تم زراعة 4 مهام وهمية بنجاح (بما فيها مهمة متأخرة Overdue للاختبار).');
+
+        $this->command->info('✅ 4 test tasks seeded successfully (including one overdue task for testing).');
     }
 }

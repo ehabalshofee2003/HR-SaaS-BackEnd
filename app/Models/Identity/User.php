@@ -7,10 +7,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Foundation\Auth\User as Authenticatable; // <-- تأكد من وجود هذا السطر
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, HasRoles;
+    use HasApiTokens, Notifiable, HasRoles , SoftDeletes;
 
     protected $table = 'users';
 
@@ -103,14 +104,23 @@ class User extends Authenticatable
      /**
      * يحصل على معرف الشركة التابع لها المستخدم بغض النظر عن عمق التسلسل الهرمي
      */
-    public function getCurrentCompanyId(): ?int
-    {
-        // التأكد من وجود سجل الموظف
-        if (!$this->employeeDetail) {
-            return null;
-        }
-
-        // التسلسل الآمن باستخدام المسارات الصحيحة (Organization)
+public function getCurrentCompanyId(): ?int
+{
+    // مسار الموظف العادي (له سجل employee_details)
+    if ($this->employeeDetail) {
         return $this->employeeDetail->department?->branch?->company_id;
     }
+
+    // مسار مدير الفرع أو المشرف (بس عندهم branch_id مباشر، بدون employeeDetail)
+    if ($this->branch_id) {
+        return \App\Models\Organization\Branch::find($this->branch_id)?->company_id;
+    }
+
+    // مسار المالك (Owner)
+    if ($this->ownedCompany) {
+        return $this->ownedCompany->id;
+    }
+
+    return null;
+}
 }

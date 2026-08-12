@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Identity\User;
+use App\Models\Organization\Company;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -9,50 +11,40 @@ use Carbon\Carbon;
 class HrEpicTestSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
-     * هذا السيدر يعتمد على أن BaseUserTestSeeder قد تم تشغيله مسبقاً
-     * (الشركة رقم 1، الفرع رقم 1، المشرف رقم 1، الموظف رقم 2)
+     * Depends on BaseUserTestSeeder having been run already.
+     * Seeds Workshops and Performance Evaluations only
+     * (Exception Types are handled separately by ExceptionTypesSeeder to avoid duplication/conflicts).
      */
     public function run(): void
     {
-        // نستخدم Transaction لضمان نظافة البيانات في حال حدوث أي خطأ
+        $supervisor = User::where('phone', '0799999999')->first();
+        $employee = User::where('phone', '0791234567')->first();
+        $company = Company::where('name', 'Nova Retail Group')->first();
+
+        if (!$supervisor || !$employee || !$company) {
+            $this->command->error('Error: run BaseUserTestSeeder first to create the users and company.');
+            return;
+        }
+
         DB::beginTransaction();
 
         try {
             $now = Carbon::now();
-            $companyId = 1;
-            $supervisorId = 1; // user_id
-            $employeeId = 2;  // user_id
+            $companyId = $company->id;
+            $supervisorId = $supervisor->id;
+            $employeeId = $employee->id;
 
             // ---------------------------------------------------------
-            // 1. بيانات Epic: Exception Requests (أنواع الاستثناءات فقط)
-            // ---------------------------------------------------------
-            // ---------------------------------------------------------
-            $exceptionTypes = [
-                ['name' => 'تأخير عن الدوام', 'slug' => 'late_arrival', 'is_active' => true],
-                ['name' => 'خروج مبكر', 'slug' => 'early_departure', 'is_active' => true],
-                ['name' => 'عمل إضافي', 'slug' => 'overtime', 'is_active' => true],
-                ['name' => 'عمل في عطلة', 'slug' => 'holiday_work', 'is_active' => true],
-            ];
-
-            foreach ($exceptionTypes as $type) {
-                DB::table('exception_types')->updateOrInsert(
-                    ['slug' => $type['slug']], // تمت إزالة company_id من الشرط
-                    array_merge($type, ['created_at' => $now, 'updated_at' => $now]) // تمت إزالته من البيانات
-                );
-            }
-
-            // ---------------------------------------------------------
-            // 2. بيانات Epic: Workshops (ورش العمل)
+            // Workshops
             // ---------------------------------------------------------
             $workshops = [
                 [
                     'company_id' => $companyId,
-                    'branch_id'  => null, // لكل الفروع
+                    'branch_id'  => null, // available to all branches
                     'created_by' => $supervisorId,
-                    'title'      => 'ورشة أمن المعلومات',
-                    'description'=> 'تتحدث عن كيفية حماية بيانات الشركة من الاختراق.',
-                    'location'   => 'قاعة الاجتماعات الرئيسية',
+                    'title'      => 'Information Security Workshop',
+                    'description'=> 'Covers how to protect company data from breaches.',
+                    'location'   => 'Main Conference Room',
                     'start_date' => Carbon::now()->addDays(15)->setTime(10, 0),
                     'end_date'   => Carbon::now()->addDays(15)->setTime(12, 0),
                     'capacity'   => 2,
@@ -60,14 +52,14 @@ class HrEpicTestSeeder extends Seeder
                 ],
                 [
                     'company_id' => $companyId,
-                    'branch_id'  => 1, // للفرع رقم 1 فقط
+                    'branch_id'  => $employee->employeeDetail?->department?->branch_id,
                     'created_by' => $supervisorId,
-                    'title'      => 'ورشة تطوير Flutter',
-                    'description'=> 'تعليم أساسيات بناء واجهات المستخدم.',
-                    'location'   => 'قاعة التدريب الفرعية',
+                    'title'      => 'Flutter Development Workshop',
+                    'description'=> 'Teaches the basics of building user interfaces.',
+                    'location'   => 'Branch Training Room',
                     'start_date' => Carbon::now()->addDays(20)->setTime(9, 0),
                     'end_date'   => Carbon::now()->addDays(20)->setTime(11, 0),
-                    'capacity'   => 0, // غير محدودة
+                    'capacity'   => 0, // unlimited
                     'status'     => 'upcoming',
                 ],
             ];
@@ -80,25 +72,25 @@ class HrEpicTestSeeder extends Seeder
             }
 
             // ---------------------------------------------------------
-            // 3. بيانات Epic: Evaluations (التقييمات)
+            // Evaluation criteria + a sample evaluation
             // ---------------------------------------------------------
-            
-            // أولاً: معايير التقييم
             DB::table('evaluation_criteria')->updateOrInsert(
-                ['name' => 'أداء العمل والإنتاجية', 'company_id' => $companyId],
+                ['name' => 'Work Performance & Productivity', 'company_id' => $companyId],
                 [
                     'company_id' => $companyId,
-                    'name'       => 'أداء العمل والإنتاجية',
-                    'description'=> 'تقييم سرعة وجودة إنجاز المهام الموكلة.',
+                    'name'       => 'Work Performance & Productivity',
+                    'description'=> 'Evaluates speed and quality of task completion.',
                     'weight'     => 80.00,
                     'is_active'  => true,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]
             );
-            $criteriaId = DB::table('evaluation_criteria')->where('name', 'أداء العمل والإنتاجية')->first()->id;
+            $criteriaId = DB::table('evaluation_criteria')
+                ->where('name', 'Work Performance & Productivity')
+                ->where('company_id', $companyId)
+                ->first()->id;
 
-            // ثانياً: التقييم نفسه
             DB::table('performance_evaluations')->updateOrInsert(
                 ['employee_user_id' => $employeeId, 'period_start' => '2023-10-01'],
                 [
@@ -108,34 +100,36 @@ class HrEpicTestSeeder extends Seeder
                     'period_start'      => '2023-10-01',
                     'period_end'        => '2023-12-31',
                     'overall_score'     => 85.50,
-                    'notes'             => 'أداء ممتاز خلال الربع الأخير مع التزام تام بالمواعيد.',
+                    'notes'             => 'Excellent performance last quarter with full punctuality.',
                     'status'            => 'completed',
-                    'read_at'           => null, // لم يقرأها الموظف بعد لاختبار راوت mark-read
+                    'read_at'           => null, // not read yet, for testing mark-read
                     'created_at'        => $now,
                     'updated_at'        => $now,
                 ]
             );
-            $evaluationId = DB::table('performance_evaluations')->where('employee_user_id', $employeeId)->first()->id;
+            $evaluationId = DB::table('performance_evaluations')
+                ->where('employee_user_id', $employeeId)
+                ->where('period_start', '2023-10-01')
+                ->first()->id;
 
-            // ثالثاً: درجة التقييم مرتبطة بالمعيار
             DB::table('evaluation_scores')->updateOrInsert(
                 ['evaluation_id' => $evaluationId, 'criteria_id' => $criteriaId],
                 [
                     'evaluation_id' => $evaluationId,
                     'criteria_id'   => $criteriaId,
                     'score'         => 85.50,
-                    'comments'      => 'يتميز بسرعة الانجاز والدقة العالية.',
+                    'comments'      => 'Fast turnaround with high accuracy.',
                     'created_at'    => $now,
                     'updated_at'    => $now,
                 ]
             );
 
             DB::commit();
-            $this->command->info('HR Epics Test Data seeded successfully!');
+            $this->command->info('✅ Workshops and evaluation test data seeded successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->command->error('Error seeding HR Epics: ' . $e->getMessage());
+            $this->command->error('Error seeding HR epics: ' . $e->getMessage());
         }
     }
 }

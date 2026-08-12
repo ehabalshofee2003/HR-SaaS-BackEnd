@@ -17,22 +17,21 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
         $user = User::where('phone', $employeePhone)->first();
 
         if (!$user) {
-            $this->command->error("الموظف التجريبي ({$employeePhone}) غير موجود. شغّل BaseUserTestSeeder أولاً.");
+            $this->command->error("Test employee ({$employeePhone}) not found. Run BaseUserTestSeeder first.");
             return;
         }
 
         $companyId = $user->getCurrentCompanyId();
         if (!$companyId) {
-            $this->command->error('الموظف ليس لديه شركة مرتبطة.');
+            $this->command->error('User has no associated company.');
             return;
         }
 
         $basicSalary = 1500.00;
-        $totalMonths = 36; // 3 سنوات
+        $totalMonths = 36;
 
-        $this->command->info("جاري إنشاء {$totalMonths} شهراً (3 سنوات) لراتب {$user->phone}...");
+        $this->command->info("Creating {$totalMonths} months (3 years) of payroll for {$user->phone}...");
 
-        // نُحدّث تاريخ التعيين ليعكس فعلياً 3 سنوات بالشركة (اختياري، لكن منطقي)
         if ($user->employeeDetail) {
             $user->employeeDetail->update([
                 'hire_date' => Carbon::now()->subMonths($totalMonths)->toDateString(),
@@ -42,9 +41,6 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
         for ($monthsAgo = $totalMonths - 1; $monthsAgo >= 0; $monthsAgo--) {
             $targetMonth = Carbon::now()->subMonths($monthsAgo);
 
-            // الشهر الحالي (monthsAgo = 0) فقط يبقى Draft — "لسا ما قبض راتبه"
-            // الشهر قبله Approved (اعتُمد لكن لم يُدفع بعد)
-            // كل ما قبل ذلك Paid فعلياً
             if ($monthsAgo === 0) {
                 $periodStatus = 'draft';
                 $recordStatus = 'draft';
@@ -65,9 +61,8 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
                 ]
             );
 
-            // خصومات وإضافات عشوائية بسيطة كل شهر، لتفادي بيانات متطابقة مملة
             $deductions = round($basicSalary * (rand(0, 8) / 100), 2);
-            $bonuses = rand(0, 4) === 0 ? round($basicSalary * 0.05, 2) : 0; // مكافأة بنسبة 20% من الأشهر تقريباً
+            $bonuses = rand(0, 4) === 0 ? round($basicSalary * 0.05, 2) : 0;
             $netSalary = round($basicSalary - $deductions + $bonuses, 2);
 
             $record = PayrollRecord::updateOrCreate(
@@ -83,12 +78,11 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
                 ]
             );
 
-            // نحذف التفاصيل القديمة أولاً لتفادي تكرارها عند إعادة تشغيل السيدر بقيم مختلفة
             PayrollRecordDetail::where('record_id', $record->id)->delete();
 
             PayrollRecordDetail::create([
                 'record_id' => $record->id,
-                'name' => 'الراتب الأساسي',
+                'name' => 'Base Salary',
                 'component_type' => 'base_salary',
                 'amount' => $basicSalary,
             ]);
@@ -96,7 +90,7 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
             if ($deductions > 0) {
                 PayrollRecordDetail::create([
                     'record_id' => $record->id,
-                    'name' => 'خصم تأمينات وحضور',
+                    'name' => 'Insurance & Attendance Deduction',
                     'component_type' => 'deduction',
                     'amount' => $deductions,
                 ]);
@@ -105,14 +99,14 @@ class EmployeeThreeYearPayrollSeeder extends Seeder
             if ($bonuses > 0) {
                 PayrollRecordDetail::create([
                     'record_id' => $record->id,
-                    'name' => 'مكافأة أداء',
+                    'name' => 'Performance Bonus',
                     'component_type' => 'bonus',
                     'amount' => $bonuses,
                 ]);
             }
         }
 
-        $this->command->warn("✅ تم إنشاء {$totalMonths} شهراً (3 سنوات) لراتب {$user->phone} بنجاح.");
-        $this->command->warn('آخر شهر: draft (لم يُقبض) | قبله: approved (معتمد، لم يُدفع) | الباقي: paid');
+        $this->command->warn("✅ Created {$totalMonths} months (3 years) of payroll for {$user->phone}.");
+        $this->command->warn('Last month: draft (unpaid) | Before that: approved (not yet paid) | Rest: paid');
     }
 }
