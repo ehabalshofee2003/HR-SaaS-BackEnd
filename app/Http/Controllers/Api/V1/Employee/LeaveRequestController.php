@@ -20,23 +20,23 @@ class LeaveRequestController extends Controller
     /**
      * صفحة "قائمة الإجازات" — تُرجع الرصيد + القائمة الكاملة (قابلة للفلترة بـ status)
      */
-    public function index(Request $request): JsonResponse
-    {
-        $user = User::find(Auth::id());
-        if (!$user) abort(401, 'Unauthorized');
+public function index(Request $request): JsonResponse
+{
+    $user = User::find(Auth::id());
+    if (!$user) abort(401, 'Unauthorized');
 
-        $perPage = $request->integer('per_page', 15);
-        $status = $request->query('status');
+    $perPage = $request->integer('per_page', 15);
+    $status = $request->query('status');
 
-        $leaveRequests = $this->leaveRequestService->getMyLeaveRequests($user->employeeDetail->id, $perPage, $status);
-        $balance = $this->leaveRequestService->getCombinedBalance($user->id);
+    $leaveRequests = $this->leaveRequestService->getMyLeaveRequests($user->id, $perPage, $status); // ⚠️ $user->id بدل employeeDetail->id
+    $balance = $this->leaveRequestService->getCombinedBalance($user->id);
 
-        return response()->json([
-            'total_leaves' => $balance['total_days'],
-            'remaining_leaves' => $balance['remaining_days'],
-            'data' => LeaveRequestResource::collection($leaveRequests),
-        ]);
-    }
+    return response()->json([
+        'total_leaves' => $balance['total_days'],
+        'remaining_leaves' => $balance['remaining_days'],
+        'data' => LeaveRequestResource::collection($leaveRequests),
+    ]);
+}
     
     public function formData(): JsonResponse
     {
@@ -72,50 +72,43 @@ class LeaveRequestController extends Controller
             ]
         ]);
     }
-    public function store(StoreLeaveRequestRequest $request): JsonResponse
-    {
-        $user = User::find(Auth::id());
-        if (!$user) abort(401, 'Unauthorized');
+public function store(StoreLeaveRequestRequest $request): JsonResponse
+{
+    $user = User::find(Auth::id());
+    if (!$user) abort(401, 'Unauthorized');
 
-        try {
-            $validated = $request->validated();
-            $validated['company_id'] = $user->getCurrentCompanyId();
+    try {
+        $validated = $request->validated();
+        $validated['company_id'] = $user->getCurrentCompanyId();
 
-            $leaveRequest = $this->leaveRequestService->submitLeaveRequest(
-                $user->employeeDetail->id,
-                $user->id,
-                $validated,
-                $request->file('attachments', [])
-            );
+        $leaveRequest = $this->leaveRequestService->submitLeaveRequest(
+            $user->id, // ⚠️ $user->id بدل employeeDetail->id
+            $user->id,
+            $validated,
+            $request->file('attachments', [])
+        );
 
-            return response()->json([
-                'message' => 'تم إرسال طلب الإجازة بنجاح.',
-                'data'    => new LeaveRequestResource($leaveRequest->load('leaveType'))
-            ], 201);
+        return response()->json([
+            'message' => 'تم إرسال طلب الإجازة بنجاح.',
+            'data'    => new LeaveRequestResource($leaveRequest->load('leaveType'))
+        ], 201);
 
-        } catch (\Exception $e) {
-            Log::error('Leave Request Error: ' . $e->getMessage());
-
-            return response()->json([
-                'message' => $e->getMessage() ?: 'حدث خطأ أثناء إرسال الطلب.'
-            ], 422);
-        }
+    } catch (\Exception $e) {
+        Log::error('Leave Request Error: ' . $e->getMessage());
+        return response()->json(['message' => $e->getMessage() ?: 'حدث خطأ أثناء إرسال الطلب.'], 422);
     }
+}
 
-    public function show(int $id): LeaveRequestResource
-    {
-        $user = User::find(Auth::id());
-        if (!$user) {
-            abort(401, 'Unauthorized');
-        }
+public function show($id): LeaveRequestResource
+{
+    $user = User::find(Auth::id());
+    if (!$user) abort(401, 'Unauthorized');
 
-        $leaveRequest = $this->leaveRequestService->getMyLeaveRequestById($user->employeeDetail->id, $id);
-        if (!$leaveRequest) {
-            abort(404, 'Leave request not found.');
-        }
+    $leaveRequest = $this->leaveRequestService->getMyLeaveRequestById($user->id, (int) $id); // ⚠️ $user->id
+    if (!$leaveRequest) abort(404, 'Leave request not found.');
 
-        return new LeaveRequestResource($leaveRequest);
-    }
+    return new LeaveRequestResource($leaveRequest);
+}
 
     public function cancel($id): JsonResponse
     {
