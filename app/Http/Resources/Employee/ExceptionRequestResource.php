@@ -20,10 +20,7 @@ class ExceptionRequestResource extends JsonResource
                 ];
             }),
             'request_date'      => Carbon::parse($this->request_date)->format('Y-m-d'),
-            'start_time'        => $this->start_time ? Carbon::parse($this->start_time)->format('H:i') : null,
-            'end_time'          => $this->end_time ? Carbon::parse($this->end_time)->format('H:i') : null,
-            'duration_minutes'  => $this->duration_minutes,
-            'reason'            => $this->reason,
+             'reason'            => $this->reason,
             'attachment'        => $this->attachment ? Storage::url($this->attachment) : null,
             'status'            => $this->status,
             'rejection_reason'  => $this->when($this->status === 'rejected', $this->rejection_reason),
