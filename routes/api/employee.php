@@ -62,14 +62,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ==========================================
     // Epic 3: Leave Requests (طلبات الإجازات) - مكتمل
-    // ==========================================
-    Route::get('leave-requests/balance', [LeaveRequestController::class, 'balance']); // فوق
-    Route::post('leave-requests', [LeaveRequestController::class, 'store']); // موجود مسبقاً
-    Route::get('leave-requests', [LeaveRequestController::class, 'index']); // موجود مسبقاً
+        // ==========================================
+    Route::get('leave-requests/balance', [LeaveRequestController::class, 'balance']);
+    Route::get('leave-requests/form-data', [LeaveRequestController::class, 'formData']);
+    Route::post('leave-requests', [LeaveRequestController::class, 'store']);
+    Route::get('leave-requests', [LeaveRequestController::class, 'index']);
     Route::put('leave-requests/{id}/cancel', [LeaveRequestController::class, 'cancel']);
-    Route::get('leave-requests/{id}', [LeaveRequestController::class, 'show']); // موجود مسبقاً
-
-    // ==========================================
+    Route::get('leave-requests/{id}', [LeaveRequestController::class, 'show']); // ⚠️ هذا يجب أن يكون آخر واحد دائماً    // ==========================================
     // Epic 4: Complaints (الشكاوى) - قيد التنفيذ
     // ==========================================
 

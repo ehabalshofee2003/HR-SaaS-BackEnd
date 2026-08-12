@@ -95,12 +95,17 @@ class LeaveRequestRepository
 
     // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
 
-    public function getEmployeeLeaveRequests(int $employeeId, int $perPage = 15): LengthAwarePaginator
+    public function getEmployeeLeaveRequests(int $employeeId, int $perPage = 15, ?string $status = null): LengthAwarePaginator
     {
-        return LeaveRequest::where('employee_id', $employeeId)
+        $query = LeaveRequest::where('employee_id', $employeeId)
             ->with(['leaveType', 'approver'])
-            ->latest()
-            ->paginate($perPage);
+            ->latest();
+
+        if ($status) {
+            $query->where('status', $status);
+      }
+
+        return $query->paginate($perPage);
     }
 
     public function findEmployeeLeaveRequest(int $employeeId, int $leaveRequestId): ?LeaveRequest
@@ -131,4 +136,38 @@ class LeaveRequestRepository
 
         return null;
     }
+    public function findLeaveTypeIdByCode(int $companyId, string $code): ?int
+    {
+        return DB::table('leave_types')
+            ->where('company_id', $companyId)
+            ->where('code', $code)
+            ->where('is_active', true)
+            ->value('id');
+    }
+    public function attachDocument(array $data): void
+{
+    DB::table('user_documents')->insert([
+        'company_id' => $data['company_id'],
+        'documentable_type' => 'App\\Models\\Hr\\LeaveRequest',
+        'documentable_id' => $data['leave_request_id'],
+        'type' => 'leave_attachment',
+        'file_name' => $data['file_name'],
+        'file_path' => $data['file_path'],
+        'mime_type' => $data['mime_type'] ?? null,
+        'uploaded_by' => $data['uploaded_by'],
+        'created_at' => Carbon::now(),
+        'updated_at' => Carbon::now(),
+    ]);
+}
+
+    public function getAttachments(int $leaveRequestId): array
+    {
+        return DB::table('user_documents')
+            ->where('documentable_type', 'App\\Models\\Hr\\LeaveRequest')
+            ->where('documentable_id', $leaveRequestId)
+            ->get()
+            ->toArray();
+    }
+
+
 }

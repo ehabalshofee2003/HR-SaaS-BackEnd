@@ -21,31 +21,35 @@ class SupervisorService
         return $this->supervisorRepository->paginateForBranch($branchId, $filters);
     }
 
-    public function create(User $manager, array $data): object
-    {
-        $branchId = $manager->getCurrentBranchId();
+public function create(User $manager, array $data): object
+{
+    $branchId = $manager->getCurrentBranchId();
 
-        return DB::transaction(function () use ($data, $branchId) {
-            $tempPassword = Str::random(10);
+    return DB::transaction(function () use ($data, $branchId) {
+        $tempPassword = Str::random(10);
 
-            $supervisorId = $this->supervisorRepository->create([
-                'phone' => $data['phone'],
-                'email' => $data['email'] ?? null,
-                'password_hash' => Hash::make($tempPassword),
-                'branch_id' => $branchId,
-            ]);
+        $supervisorId = $this->supervisorRepository->create([
+            'phone' => $data['phone'],
+            'email' => $data['email'] ?? null,
+            'password_hash' => Hash::make($tempPassword),
+            'branch_id' => $branchId,
+        ]);
 
-            $this->supervisorRepository->createProfile($supervisorId, $data['full_name']);
+        $this->supervisorRepository->createProfile($supervisorId, $data['full_name']);
 
-            if (!empty($data['department_id'])) {
-                $this->supervisorRepository->assignToDepartment($supervisorId, $data['department_id']);
-            }
+        if (!empty($data['department_id'])) {
+            $this->supervisorRepository->assignToDepartment($supervisorId, $data['department_id']);
+        }
 
-            // TODO: إرسال إشعار بكلمة المرور المؤقتة عبر SMS
+        // تعيين role "supervisor" فور إنشاء الحساب (Spatie Permission)
+        $newSupervisor = User::find($supervisorId);
+        $newSupervisor->assignRole('supervisor');
 
-            return $this->supervisorRepository->findForBranch($supervisorId, $branchId);
-        });
-    }
+        // TODO: إرسال إشعار بكلمة المرور المؤقتة عبر SMS
+
+        return $this->supervisorRepository->findForBranch($supervisorId, $branchId);
+    });
+}
 
     public function getDetails(int $id, User $manager): object
     {

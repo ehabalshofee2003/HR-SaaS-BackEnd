@@ -55,4 +55,18 @@ class LeaveBalanceRepository
             ->with('policy')
             ->get();
     }
+    public function getCombinedBalance(int $employeeUserId): array
+    {
+        $result = DB::table('leave_balances')
+            ->join('leave_policies', 'leave_balances.policy_id', '=', 'leave_policies.id')
+            ->where('leave_balances.employee_user_id', $employeeUserId)
+            ->where('leave_balances.year', Carbon::now()->year)
+            ->selectRaw('SUM(leave_policies.days_per_year) as total, SUM(leave_balances.remaining_days) as remaining')
+            ->first();
+
+        return [
+            'total_days' => (float) ($result->total ?? 0),
+            'remaining_days' => (float) ($result->remaining ?? 0),
+        ];
+    }
 }

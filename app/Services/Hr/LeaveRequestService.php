@@ -121,44 +121,81 @@ class LeaveRequestService
 
     // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
 
-    public function getMyLeaveRequests(int $employeeId, int $perPage)
+    public function getMyLeaveRequests(int $employeeId, int $perPage, ?string $status = null)
     {
-        return $this->leaveRequestRepository->getEmployeeLeaveRequests($employeeId, $perPage);
+        return $this->leaveRequestRepository->getEmployeeLeaveRequests($employeeId, $perPage, $status);
     }
 
     public function getMyLeaveRequestById(int $employeeId, int $leaveRequestId): ?LeaveRequest
     {
         return $this->leaveRequestRepository->findEmployeeLeaveRequest($employeeId, $leaveRequestId);
     }
-
-    public function submitLeaveRequest(int $employeeId, array $data, $file = null): LeaveRequest
+    public function submitLeaveRequest(int $employeeId, int $userId, array $data, array $files = []): LeaveRequest
     {
-        $attachmentPath = null;
+        $leaveTypeId = $this->leaveRequestRepository->findLeaveTypeIdByCode($data['company_id'], $data['leave_type']);
 
-        if ($file) {
-            $attachmentPath = $file->store('leave_attachments/' . $employeeId, 'public');
+        if (!$leaveTypeId) {
+            throw new Exception('نوع الإجازة المحدد غير متاح حالياً.');
         }
 
-        DB::beginTransaction();
-        try {
-            $data['employee_id'] = $employeeId;
-            $data['status'] = 'pending';
-            $data['attachment'] = $attachmentPath;
+        $uploadedPaths = [];
 
-            $leaveRequest = $this->leaveRequestRepository->create($data);
+        try {
+            $storedFiles = [];
+            foreach ($files as $file) {
+                $path = $file->store('leave_attachments/' . $employeeId, 'public');
+                $uploadedPaths[] = $path;
+                $storedFiles[] = [
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'mime_type' => $file->getClientMimeType(),
+                ];
+            }
+
+            DB::beginTransaction();
+
+            $insertData = [
+                'employee_id' => $employeeId,
+                'company_id' => $data['company_id'],
+                'leave_type_id' => $leaveTypeId,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'reason' => $data['reason'],
+                'status' => 'pending',
+            ];
+
+            $leaveRequest = $this->leaveRequestRepository->create($insertData);
+
+            foreach ($storedFiles as $file) {
+                $this->leaveRequestRepository->attachDocument([
+                    'company_id' => $data['company_id'],
+                    'leave_request_id' => $leaveRequest->id,
+                    'file_name' => $file['file_name'],
+                    'file_path' => $file['file_path'],
+                    'mime_type' => $file['mime_type'],
+                    'uploaded_by' => $userId,
+                ]);
+            }
 
             DB::commit();
             return $leaveRequest;
 
         } catch (Exception $e) {
-            DB::rollBack();
+            if (isset($leaveRequest)) {
+                DB::rollBack();
+            }
 
-            if ($attachmentPath) {
-                Storage::disk('public')->delete($attachmentPath);
+            foreach ($uploadedPaths as $path) {
+                Storage::disk('public')->delete($path);
             }
 
             throw $e;
         }
+    }
+    public function getEmployeeBalanceSummary()
+    {
+        $user = $this->getAuthenticatedUser();
+        return $this->leaveBalanceRepository->getEmployeeCurrentYearBalances($user->id);
     }
 
     public function getBalance()
@@ -203,5 +240,14 @@ class LeaveRequestService
             abort(401, 'Unauthorized');
         }
         return $user;
+    }
+    public function getCombinedBalance(int $employeeUserId): array
+    {
+        return $this->leaveBalanceRepository->getCombinedBalance($employeeUserId);
+    }
+
+    public function getAttachmentsFor(int $leaveRequestId): array
+    {
+        return $this->leaveRequestRepository->getAttachments($leaveRequestId);
     }
 }

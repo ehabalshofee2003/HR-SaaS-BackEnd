@@ -2,20 +2,32 @@
 
 namespace App\Http\Resources\Employee;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class LeaveBalanceResource extends JsonResource
 {
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
+        $policy = $this->whenLoaded('policy') ? $this->policy : $this->policy;
+
         return [
             'id' => $this->id,
-            // نوع الإجازة مأخوذ من جدول السياسات المرتبط بالرصيد
-            'leave_type' => $this->whenLoaded('policy', fn() => $this->policy->leave_type),
+            'leave_type' => $policy?->leave_type, // annual, sick, emergency
+            'leave_type_label' => $this->translateType($policy?->leave_type),
+            'total_days' => (float) ($policy?->days_per_year ?? 0),
             'remaining_days' => (float) $this->remaining_days,
-            'total_days_per_year' => $this->whenLoaded('policy', fn() => (float) $this->policy->days_per_year),
-            'is_carry_forward' => $this->whenLoaded('policy', fn() => (bool) $this->policy->is_carry_forward),
-            'year' => $this->year,
+            'used_days' => (float) (($policy?->days_per_year ?? 0) - $this->remaining_days),
         ];
+    }
+
+    private function translateType(?string $type): ?string
+    {
+        return match ($type) {
+            'annual' => 'سنوية',
+            'sick' => 'مرضية',
+            'emergency' => 'طارئة',
+            default => $type,
+        };
     }
 }

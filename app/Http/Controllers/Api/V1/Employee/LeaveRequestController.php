@@ -5,64 +5,100 @@ namespace App\Http\Controllers\Api\V1\Employee;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\StoreLeaveRequestRequest;
 use App\Http\Resources\Employee\LeaveRequestResource;
+use App\Http\Resources\Employee\LeaveBalanceResource;
 use App\Services\Hr\LeaveRequestService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Identity\User;
 use Illuminate\Support\Facades\Log;
-use App\Http\Resources\Employee\LeaveBalanceResource;
+use Illuminate\Http\Request;
 
 class LeaveRequestController extends Controller
 {
     public function __construct(private LeaveRequestService $leaveRequestService) {}
 
-    public function index(): AnonymousResourceCollection
+    /**
+     * صفحة "قائمة الإجازات" — تُرجع الرصيد + القائمة الكاملة (قابلة للفلترة بـ status)
+     */
+    public function index(Request $request): JsonResponse
     {
-        // Auth Type Hinting لتجنب أخطاء Intelephense
         $user = User::find(Auth::id());
-        if (!$user) {
-            abort(401, 'Unauthorized');
-        }
+        if (!$user) abort(401, 'Unauthorized');
 
-        $perPage = request()->integer('per_page', 15);
-        $leaveRequests = $this->leaveRequestService->getMyLeaveRequests($user->employeeDetail->id, $perPage);
+        $perPage = $request->integer('per_page', 15);
+        $status = $request->query('status');
 
-        return LeaveRequestResource::collection($leaveRequests);
+        $leaveRequests = $this->leaveRequestService->getMyLeaveRequests($user->employeeDetail->id, $perPage, $status);
+        $balance = $this->leaveRequestService->getCombinedBalance($user->id);
+
+        return response()->json([
+            'total_leaves' => $balance['total_days'],
+            'remaining_leaves' => $balance['remaining_days'],
+            'data' => LeaveRequestResource::collection($leaveRequests),
+        ]);
     }
+    
+    public function formData(): JsonResponse
+    {
+        $user = User::find(Auth::id());
+        if (!$user) abort(401, 'Unauthorized');
 
+        $balance = $this->leaveRequestService->getCombinedBalance($user->id);
+
+        return response()->json([
+            'total_leaves' => $balance['total_days'],
+            'remaining_leaves' => $balance['remaining_days'],
+            'leave_types' => [
+                ['value' => 'annual', 'label' => 'سنوية'],
+                ['value' => 'sick', 'label' => 'مرضية'],
+                ['value' => 'emergency', 'label' => 'طارئة'],
+            ],
+        ]);
+    }
+/**
+ * الراوت القديم leave-requests/balance — أُبقي عليه لتوافقية أي شاشة تستخدمه حالياً
+    */
+    public function balance(): JsonResponse
+    {
+        $user = User::find(Auth::id());
+        if (!$user) abort(401, 'Unauthorized');
+
+        $balance = $this->leaveRequestService->getCombinedBalance($user->id);
+
+        return response()->json([
+            'data' => [
+                'total_leaves' => $balance['total_days'],
+                'remaining_leaves' => $balance['remaining_days'],
+            ]
+        ]);
+    }
     public function store(StoreLeaveRequestRequest $request): JsonResponse
     {
         $user = User::find(Auth::id());
-        if (!$user) {
-            abort(401, 'Unauthorized');
-        }
+        if (!$user) abort(401, 'Unauthorized');
 
         try {
             $validated = $request->validated();
-            
-            // إضافة company_id للبيانات
-            // ملاحظة معمارية: في المستقبل ستأخذها من $user->employeeDetail->company_id
-            // حالياً نضعها 1 للاختبار لأننا في بيئة شركة واحدة
-            $validated['company_id'] = 1; 
+            $validated['company_id'] = $user->getCurrentCompanyId();
 
             $leaveRequest = $this->leaveRequestService->submitLeaveRequest(
                 $user->employeeDetail->id,
+                $user->id,
                 $validated,
-                $request->file('attachment')
+                $request->file('attachments', [])
             );
 
             return response()->json([
-                'message' => 'Leave request submitted successfully.',
+                'message' => 'تم إرسال طلب الإجازة بنجاح.',
                 'data'    => new LeaveRequestResource($leaveRequest->load('leaveType'))
             ], 201);
 
         } catch (\Exception $e) {
             Log::error('Leave Request Error: ' . $e->getMessage());
-            
+
             return response()->json([
-                'message' => 'An error occurred while submitting your request.'
-            ], 500);
+                'message' => $e->getMessage() ?: 'حدث خطأ أثناء إرسال الطلب.'
+            ], 422);
         }
     }
 
@@ -80,13 +116,7 @@ class LeaveRequestController extends Controller
 
         return new LeaveRequestResource($leaveRequest);
     }
-        public function balance(): JsonResponse
-    {
-        $result = $this->leaveRequestService->getBalance();
-        return response()->json([
-            'data' => LeaveBalanceResource::collection($result['data'])
-        ]);
-    }
+
     public function cancel($id): JsonResponse
     {
         $result = $this->leaveRequestService->cancelRequest($id);
