@@ -260,28 +260,55 @@ class PayrollService
         return $this->payrollRepository->getEmployeePayrolls($user->id);
     }
 
-    public function getPayrollDetail($id)
-    {
-        $user = $this->getAuthenticatedUser();
-        $payroll = $this->payrollRepository->findEmployeePayrollById((int) $id, $user->id);
+public function getPayrollDetail($id)
+{
+    $user = $this->getAuthenticatedUser();
+    $payroll = $this->payrollRepository->findEmployeePayrollById((int) $id, $user->id);
 
-        if (!$payroll) {
-            return [
-                'success' => false,
-                'message' => 'Payroll record not found.',
-                'code' => 404,
-                'data' => null
-            ];
-        }
-
+    if (!$payroll) {
         return [
-            'success' => true,
-            'message' => 'Payroll details retrieved successfully.',
-            'code' => 200,
-            'data' => $payroll
+            'success' => false,
+            'message' => 'Payroll record not found.',
+            'code' => 404,
+            'data' => null
         ];
     }
 
+    $companyId = $user->getCurrentCompanyId();
+    $startDate = $payroll->period->start_date;
+    $endDate = $payroll->period->end_date;
+
+    // إحصائيات الحضور
+    $counts = $this->payrollRepository->getAttendanceCounts($user->id, $startDate, $endDate);
+
+    // حساب ساعات التأخير الفعلية (بالمقارنة مع وقت بداية الدوام الرسمي)
+    $workStartTime = $this->payrollRepository->getWorkStartTime($companyId);
+    $lateCheckIns = $this->payrollRepository->getLateCheckIns($user->id, $startDate, $endDate);
+
+    $lateHours = 0;
+    if ($workStartTime) {
+        foreach ($lateCheckIns as $checkIn) {
+            $checkInTime = \Carbon\Carbon::parse($checkIn);
+            $expectedTime = \Carbon\Carbon::parse($checkInTime->format('Y-m-d') . ' ' . $workStartTime);
+
+            if ($checkInTime->gt($expectedTime)) {
+                $lateHours += $checkInTime->diffInMinutes($expectedTime) / 60;
+            }
+        }
+    }
+
+    // إرفاق البيانات المحسوبة على الموديل نفسه ليقدر الـ Resource يقرأها
+    $payroll->setAttribute('work_days', (int) ($counts->work_days ?? 0));
+    $payroll->setAttribute('absent_days', (int) ($counts->absent_days ?? 0));
+    $payroll->setAttribute('late_hours', round($lateHours, 2));
+
+    return [
+        'success' => true,
+        'message' => 'Payroll details retrieved successfully.',
+        'code' => 200,
+        'data' => $payroll
+    ];
+}
 public function generatePdf($id)
 {
     $user = $this->getAuthenticatedUser();
@@ -332,4 +359,5 @@ public function generatePdf($id)
         }
         return $user;
     }
+    
 }

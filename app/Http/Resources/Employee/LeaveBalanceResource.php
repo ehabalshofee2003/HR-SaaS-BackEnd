@@ -21,13 +21,13 @@ class LeaveBalanceResource extends JsonResource
         ];
     }
 
-    private function translateType(?string $type): ?string
-    {
-        return match ($type) {
-            'annual' => 'سنوية',
-            'sick' => 'مرضية',
-            'emergency' => 'طارئة',
-            default => $type,
-        };
-    }
+private function translateType(?string $type): ?string
+{
+    return match ($type) {
+        'annual' => 'Annual Leave',
+        'sick' => 'Sick Leave',
+        'emergency' => 'Emergency Leave',
+        default => $type,
+    };
+}
 }

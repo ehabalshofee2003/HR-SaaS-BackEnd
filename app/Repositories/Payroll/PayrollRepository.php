@@ -258,4 +258,35 @@ public function findEmployeePayrollForPdf(int $id, int $employeeUserId): ?Payrol
         ->with(['period', 'details'])
         ->first();
 }
+public function getAttendanceCounts(int $employeeUserId, string $startDate, string $endDate): object
+{
+    return DB::table('attendance_logs')
+        ->where('employee_user_id', $employeeUserId)
+        ->whereBetween('check_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+        ->whereNull('deleted_at')
+        ->selectRaw("
+            SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) as work_days,
+            SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_days
+        ")
+        ->first();
+}
+
+public function getLateCheckIns(int $employeeUserId, string $startDate, string $endDate): array
+{
+    return DB::table('attendance_logs')
+        ->where('employee_user_id', $employeeUserId)
+        ->where('status', 'late')
+        ->whereBetween('check_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+        ->whereNull('deleted_at')
+        ->pluck('check_in')
+        ->toArray();
+}
+
+public function getWorkStartTime(int $companyId): ?string
+{
+    return DB::table('company_settings')
+        ->where('company_id', $companyId)
+        ->where('key', 'work_start_time')
+        ->value('value');
+}
 }

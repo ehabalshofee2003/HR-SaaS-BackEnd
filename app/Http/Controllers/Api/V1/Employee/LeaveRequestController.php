@@ -49,9 +49,9 @@ class LeaveRequestController extends Controller
             'total_leaves' => $balance['total_days'],
             'remaining_leaves' => $balance['remaining_days'],
             'leave_types' => [
-                ['value' => 'annual', 'label' => 'سنوية'],
-                ['value' => 'sick', 'label' => 'مرضية'],
-                ['value' => 'emergency', 'label' => 'طارئة'],
+                ['value' => 'annual', 'label' => 'Annual Leave'],
+                ['value' => 'sick', 'label' => 'Sick Leave'],
+                ['value' => 'emergency', 'label' => 'Emergency Leave'],
             ],
         ]);
     }

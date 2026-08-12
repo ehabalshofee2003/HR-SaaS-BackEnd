@@ -13,6 +13,7 @@ class DevTestDataSeeder extends Seeder
             SupervisorTestSeeder::class, // أضف هذا السطر
             PermissionSeeder::class,
             PayrollTestSeeder::class,
+            AttendanceMonthTestSeeder::class,
             AttendanceTestSeeder::class,
             ResignationTestSeeder::class,
             AnnouncementTestSeeder::class,
@@ -20,6 +21,7 @@ class DevTestDataSeeder extends Seeder
             TaskTestSeeder::class, // أضف هذا السطر
             EvaluationCriteriaTestSeeder::class, // أضف هذا السطر
             LeaveTypesTestSeeder::class, // أضف هذا السطر
+            LeaveRequestTestSeeder::class,
             EmployeeThreeYearPayrollSeeder::class, // أضف هذا السطر
             ExceptionTypesSeeder::class,
             
