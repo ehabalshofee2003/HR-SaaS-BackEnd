@@ -10,13 +10,14 @@ class DevTestDataSeeder extends Seeder
     {
         $this->call([
             BaseUserTestSeeder::class, // <-- يجب أن يكون أولاً دائماً
+            SupervisorTestSeeder::class, // أضف هذا السطر
+            PermissionSeeder::class,
             PayrollTestSeeder::class,
             AttendanceTestSeeder::class,
             ResignationTestSeeder::class,
             AnnouncementTestSeeder::class,
             HrEpicTestSeeder::class, 
             TaskTestSeeder::class, // أضف هذا السطر
-            SupervisorTestSeeder::class, // أضف هذا السطر
             EvaluationCriteriaTestSeeder::class, // أضف هذا السطر
             LeaveTypesTestSeeder::class, // أضف هذا السطر
             EmployeeThreeYearPayrollSeeder::class, // أضف هذا السطر

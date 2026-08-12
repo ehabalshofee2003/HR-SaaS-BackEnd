@@ -6,48 +6,27 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use App\Models\Identity\User;
 
 class PermissionSeeder extends Seeder
 {
-    /**
-     * جميع الصلاحيات الممكنة بالنظام، مقسّمة حسب النطاق (Scope).
-     * كل صلاحية بتنعرّف مرة وحدة فقط بجدول permissions،
-     * وبعدين بتتوزع على الأدوار (roles) كـ "سقف نظري" (Template).
-     */
     protected array $branchManagerPermissions = [
-        // Departments
         'departments.view', 'departments.create', 'departments.update', 'departments.delete',
-        // Supervisors
         'supervisors.view', 'supervisors.create', 'supervisors.update', 'supervisors.delete', 'supervisors.assign',
-        // Employees
         'employees.view', 'employees.create', 'employees.update', 'employees.delete', 'employees.documents.manage',
-        // Attendance
         'attendance.view', 'attendance.manual_entry', 'attendance.export',
-        // Tasks
         'tasks.view', 'tasks.create', 'tasks.update', 'tasks.delete',
-        // Evaluations
         'evaluations.view', 'evaluations.create', 'evaluations.review',
-        // Leaves
         'leaves.view', 'leaves.approve', 'leaves.reject',
-        // Exception Requests
         'exceptions.view', 'exceptions.forward', 'exceptions.reject',
-        // Payroll
         'payroll.view', 'payroll.calculate', 'payroll.approve', 'payroll.mark_paid', 'payroll.export',
-        // Complaints
         'complaints.view', 'complaints.respond', 'complaints.escalate', 'complaints.resolve',
-        // Resignations
         'resignations.view', 'resignations.approve', 'resignations.reject',
-        // Announcements
         'announcements.view', 'announcements.create', 'announcements.delete',
-        // Workshops
         'workshops.view', 'workshops.create', 'workshops.update', 'workshops.manage_attendance',
-        // Reports
         'reports.view',
-        // Notifications
         'notifications.view',
-        // Dashboard
         'dashboard.view',
-        // Account & Settings
         'settings.view', 'settings.update',
     ];
 
@@ -64,12 +43,10 @@ class PermissionSeeder extends Seeder
 
     public function run(): void
     {
-        // تفريغ الكاش المحلي لصلاحيات Spatie قبل البدء
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $guard = 'web';
 
-        // دمج كل الصلاحيات الفريدة (بدون تكرار) وإنشاؤها دفعة وحدة
         $allPermissions = array_unique(array_merge(
             $this->branchManagerPermissions,
             $this->supervisorPermissions
@@ -82,22 +59,32 @@ class PermissionSeeder extends Seeder
             ]);
         }
 
-        // إنشاء الأدوار وربطها بالسقف النظري لكل دور
-        $managerRole = Role::firstOrCreate([
-            'name' => 'manager',
-            'guard_name' => $guard,
-        ]);
-        // $managerRole->syncPermissions($this->branchManagerPermissions);
-
-        $supervisorRole = Role::firstOrCreate([
-            'name' => 'supervisor',
-            'guard_name' => $guard,
-        ]);
-        // $supervisorRole->syncPermissions($this->supervisorPermissions);
-
-        // الأدوار الأعلى (owner, super_admin) بنعرّفها هون بدون صلاحيات مفصّلة الآن
-        // (رح تُبنى صلاحياتها بمرحلة لاحقة عند تطوير باك إند الـ Owner)
+        $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => $guard]);
+        $supervisorRole = Role::firstOrCreate(['name' => 'supervisor', 'guard_name' => $guard]);
         Role::firstOrCreate(['name' => 'owner', 'guard_name' => $guard]);
         Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => $guard]);
+
+        // =====================================================
+        // منح فعلي للمستخدمين التجريبيين (يعتمد على BaseUserTestSeeder/SupervisorTestSeeder)
+        // =====================================================
+
+        // مدير الفرع التجريبي: يحصل تلقائياً على كل صلاحيات Branch Manager مباشرة (منح مباشر، مو عبر Role)
+        $branchManager = User::where('phone', '0798888888')->first();
+        if ($branchManager) {
+            $branchManager->assignRole($managerRole); // Role كـ Label فقط
+            $branchManager->givePermissionTo($this->branchManagerPermissions); // المنح الفعلي مباشر
+        }
+
+        // المشرفون التجريبيون: يحصلون فقط على الـ Role كـ Label — بدون أي صلاحية (يمنحها مدير الفرع لاحقاً يدوياً)
+        $supervisorPhones = ['0799999999', '0797777777', '0999999999'];
+        foreach ($supervisorPhones as $phone) {
+            $supervisor = User::where('phone', $phone)->first();
+            if ($supervisor) {
+                $supervisor->assignRole($supervisorRole);
+                // ملاحظة: بدون givePermissionTo — المشرف يبدأ بصفر صلاحيات حسب القرار المعتمد
+            }
+        }
+
+        $this->command->info('✅ Permissions & roles seeded, and test branch manager granted full permissions.');
     }
 }
