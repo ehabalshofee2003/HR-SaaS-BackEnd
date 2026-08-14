@@ -36,6 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/v1/branch-manager')
                 ->middleware(['api', 'auth:sanctum'])
                 ->group(base_path('routes/api/branchmanager.php'));
+            Route::prefix('api/auth')
+                ->middleware(['api', 'auth:sanctum'])
+                ->group(base_path('routes/api/auth.php'));
         }
     )
     ->withMiddleware(function (Middleware $middleware) {

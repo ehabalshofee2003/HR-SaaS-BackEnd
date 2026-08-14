@@ -11,22 +11,20 @@ class QrCodeService
     public function __construct(
         protected QrCodeRepository $qrCodeRepository
     ) {}
+public function generate(int $supervisorUserId, string $type): ?QrCode
+{
+    $branchId = \App\Models\Identity\User::find($supervisorUserId)?->branch_id;
 
-    public function generate(int $supervisorUserId, string $type): ?QrCode
-    {
-        $branchId = \App\Models\Identity\User::find($supervisorUserId)
-            ?->employeeDetail?->department?->branch_id;
-
-        if (!$branchId) {
-            return null;
-        }
-
-        return $this->qrCodeRepository->create([
-            'branch_id'    => $branchId,
-            'code'         => Str::uuid()->toString(),
-            'type'         => $type,
-            'usage_limit'  => 0,
-            'expires_at'   => now()->addMinutes(15),
-        ]);
+    if (!$branchId) {
+        return null;
     }
+
+    return $this->qrCodeRepository->create([
+        'branch_id'    => $branchId,
+        'code'         => Str::uuid()->toString(),
+        'type'         => $type,
+        'usage_limit'  => 0,
+        'expires_at'   => now()->addMinutes(15),
+    ]);
+}
 }

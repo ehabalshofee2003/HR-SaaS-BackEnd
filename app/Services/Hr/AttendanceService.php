@@ -210,9 +210,7 @@ class AttendanceService
         if ($qr->type !== 'check_in') {
             return ['success' => false, 'message' => 'This QR is not for check-in', 'code' => 422];
         }
-
-        $employeeBranchId = \App\Models\Identity\User::find($employeeUserId)
-            ?->employeeDetail?->department?->branch_id;
+        $employeeBranchId = \App\Models\Identity\User::find($employeeUserId)?->branch_id;
 
         if ($employeeBranchId != $qr->branch_id) {
             return ['success' => false, 'message' => 'QR code does not belong to your branch', 'code' => 403];

@@ -18,11 +18,11 @@ class BaseUserTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $employeePhone = '0791234567';
-        $supervisorPhone = '0799999999';
-        $branchManagerPhone = '0798888888';
-        $secondSupervisorPhone = '0797777777';
-
+    $employeePhone = '0791234567';
+    $supervisorPhone = '0799999999';
+    $branchManagerPhone = '0798888888';
+    $secondSupervisorPhone = '0797777777';
+    $ownerTestPhone = '0932556713'; // ⚠️ حط هنا رقمك الحقيقي (نفس شريحة SMS Gateway)
         if (User::where('phone', $employeePhone)->exists()) {
             $this->command->info('Test data already exists.');
             return;
@@ -34,12 +34,19 @@ class BaseUserTestSeeder extends Seeder
             'user_type' => 'supervisor',
             'status' => 'active',
         ]);
+        $ownerUser = User::create([
+        'phone' => $ownerTestPhone,
+        'password_hash' => Hash::make('123456'),
+        'user_type' => 'owner',
+        'status' => 'active',
+        ]);
+    UserProfile::create(['user_id' => $ownerUser->id, 'full_name' => 'Test Owner']);
         UserProfile::create(['user_id' => $supervisor->id, 'full_name' => 'James Carter']);
 
-        $company = Company::create([
-            'name' => 'Nova Retail Group',
-            'owner_user_id' => $supervisor->id,
-        ]);
+$company = Company::create([
+    'name' => 'Nova Retail Group',
+    'owner_user_id' => $ownerUser->id,
+]);
 
         $branch = Branch::create(['company_id' => $company->id, 'name' => 'Downtown Branch']);
 
@@ -100,6 +107,7 @@ class BaseUserTestSeeder extends Seeder
         $this->command->warn("Supervisor: {$supervisorPhone} | Password: 123456 | James Carter");
         $this->command->warn("Branch Manager: {$branchManagerPhone} | Password: 123456 | Michael Reed");
         $this->command->warn("Second Supervisor: {$secondSupervisorPhone} | Password: 123456 | Sarah Bennett");
+        $this->command->warn("Owner: {$ownerTestPhone} | Password: 123456 | Test Owner");
         $this->command->warn('=====================================================');
     }
 }
