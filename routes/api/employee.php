@@ -107,24 +107,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
 
     Route::prefix('workshops')->group(function () {
-        // الورش العامة المتاحة
-        Route::get('/', [WorkshopController::class, 'index']);
-        Route::get('/{id}', [WorkshopController::class, 'show']);
-        Route::post('/{id}/register', [WorkshopController::class, 'register']);
-        Route::post('/{id}/unregister', [WorkshopController::class, 'unregister']);
-        
-        // ورشي أنا (المسجل بها)
-        Route::get('/my', [WorkshopController::class, 'myWorkshops']);
-        Route::get('/my/{id}', [WorkshopController::class, 'myWorkshopShow']);
+    Route::get('/workshops', [WorkshopController::class, 'index']);
+    Route::post('/workshops/{id}/register', [WorkshopController::class, 'register']);
+    Route::post('/workshops/{id}/cancel', [WorkshopController::class, 'cancel']);
     });
 
-    // ==========================================
-    // Epic 8: Support Tickets (تذاكر الدعم) - قيد التنفيذ
-    // ==========================================
-    // Route::post('support-tickets', [SupportTicketController::class, 'store']);
-    // Route::get('support-tickets', [SupportTicketController::class, 'index']);
-    // Route::get('support-tickets/{id}', [SupportTicketController::class, 'show']);
-
+ 
     // ==========================================
     // Epic 9: Payroll (كشف الراتب)  
     // ==========================================
@@ -136,8 +124,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     Route::get('attendance/today', [AttendanceController::class, 'today']);
     Route::get('attendance/history', [AttendanceController::class, 'history']);
-    Route::post('attendance/check-in', [AttendanceController::class, 'checkIn']); // موجود مسبقاً
-    Route::post('attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::get('/attendance/summary', [AttendanceController::class, 'summary']);
+
 
     // ==========================================
     // Resignations Routes (طلبات الاستقالة)

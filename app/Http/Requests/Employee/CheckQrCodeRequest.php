@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\SuperAdmin;
+namespace App\Http\Requests\Employee;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class LoginRequest extends FormRequest
+class CheckQrCodeRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,8 +14,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8'],
+            'qr_code' => ['required', 'string'],
         ];
     }
 }

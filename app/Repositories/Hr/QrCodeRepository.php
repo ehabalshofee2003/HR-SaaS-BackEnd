@@ -15,4 +15,9 @@ class QrCodeRepository
     {
         return QrCode::where('code', $code)->first();
     }
+
+    public function markUsed(int $id): void
+    {
+        QrCode::where('id', $id)->update(['used_at' => now()]);
+    }
 }

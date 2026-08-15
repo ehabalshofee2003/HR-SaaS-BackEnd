@@ -169,7 +169,12 @@ class AttendanceRepository
             ->whereNull('check_out')
             ->exists();
     }
-
+public function hasCheckedInToday(int $employeeUserId): bool
+{
+    return AttendanceLog::where('employee_user_id', $employeeUserId)
+        ->whereDate('check_in', Carbon::today())
+        ->exists();
+}
     /**
      * دالة عامة لإنشاء سجل حضور (تُستخدم من QR Check-In في تطبيق الموظف).
      * لا تُعدّل هذه الدالة لإضافة منطق خاص بمدير الفرع — استخدم createManualEntry() بدلاً من ذلك.
