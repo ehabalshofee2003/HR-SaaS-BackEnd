@@ -28,11 +28,11 @@ class DemoDataSeeder extends Seeder
             $supervisors = $this->seedSupervisors([$branch1, $branch2]);
             $leaveTypeIds = $this->seedLeaveTypes($companyId);
             $exceptionTypeIds = $this->seedExceptionTypes();
-            [$employees, $employeeSupervisors] = $this->seedEmployees($companyId, $departments, $supervisors);
+            [$employees, $employeeSupervisors, $employeeDetailIds] = $this->seedEmployees($companyId, $departments, $supervisors);
 
             $this->seedLeaveBalances($employees, $leaveTypeIds);
             $this->seedLeaveRequests($companyId, $employees, $leaveTypeIds);
-            $this->seedExceptionRequests($companyId, $employees, $exceptionTypeIds);
+            $this->seedExceptionRequests($companyId, $employees, $exceptionTypeIds, $employeeDetailIds);
             $this->seedAttendance($companyId, $employees, [$branch1, $branch2]);
             $this->seedTasks($companyId, $employees, $supervisors);
             $this->seedPayroll($companyId, $employees);
@@ -61,6 +61,7 @@ class DemoDataSeeder extends Seeder
 
         $adminId = DB::table('users')->insertGetId([
             'email' => 'admin@test.com',
+            'phone' => '0939624070',
             'password_hash' => Hash::make('Password123'),
             'user_type' => 'super_admin',
             'status' => 'active',
@@ -182,7 +183,8 @@ class DemoDataSeeder extends Seeder
         $ids = [];
 
         foreach ($branches as $i => $branchId) {
-            $phone = '0932556713' . ($i + 1);
+            // تم تعديل رقم الهاتف ليكون فريداً
+            $phone = '094398584' . ($i + 1);
 
             $userId = DB::table('users')->insertGetId([
                 'phone' => $phone,
@@ -235,41 +237,51 @@ class DemoDataSeeder extends Seeder
 
     // ============ Supervisors ============
 
-    private function seedSupervisors(array $branches): array
-    {
-        $names = ['James Carter', 'Emily Bennett', 'David Foster', 'Olivia Martin'];
-        $result = [];
-        $counter = 1;
+private function seedSupervisors(array $branches): array
+{
+    $names = ['James Carter', 'Emily Bennett', 'David Foster', 'Olivia Martin'];
+    
+    // 💡 ضع الأرقام الحقيقية التي تريد استلام الـ OTP عليها هنا بالترتيب
+    $realPhones = [
+        '0991726600', // المشرف الأول
+        '0991236665', // المشرف الثاني
+        '0988232386', // المشرف الثالث
+        '0944444444', // المشرف الرابع
+    ];
 
-        foreach ($branches as $branchId) {
-            for ($i = 0; $i < 2; $i++) {
-                $phone = '0994469119' . str_pad($counter, 2, '0', STR_PAD_LEFT);
+    $result = [];
+    $counter = 0;
 
-                $userId = DB::table('users')->insertGetId([
-                    'phone' => $phone,
-                    'password_hash' => $this->pwHash,
-                    'user_type' => 'supervisor',
-                    'status' => 'active',
-                    'branch_id' => $branchId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+    foreach ($branches as $branchId) {
+        for ($i = 0; $i < 2; $i++) {
+            // أخذ الرقم الحقيقي من المصفوفة
+            $phone = $realPhones[$counter] ?? '099446911' . ($counter + 1);
 
-                DB::table('user_profiles')->insert([
-                    'user_id' => $userId,
-                    'full_name' => $names[$counter - 1],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            $userId = DB::table('users')->insertGetId([
+                'phone' => $phone,
+                'password_hash' => $this->pwHash,
+                'user_type' => 'supervisor',
+                'status' => 'active',
+                'branch_id' => $branchId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-                $result[$branchId][] = $userId;
-                $this->command->info("Supervisor ({$names[$counter - 1]}): {$phone}");
-                $counter++;
-            }
+            DB::table('user_profiles')->insert([
+                'user_id' => $userId,
+                'full_name' => $names[$counter],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $result[$branchId][] = $userId;
+            $this->command->info("Supervisor ({$names[$counter]}): {$phone}");
+            $counter++;
         }
-
-        return $result;
     }
+
+    return $result;
+}
 
     // ============ Leave Types ============
 
@@ -329,15 +341,26 @@ class DemoDataSeeder extends Seeder
 
         $employees = [];
         $employeeSupervisors = [];
+        $employeeDetailIds = [];
         $counter = 1;
+        $realPhones = [
+            '0998876332', // موظف 1
+            '0981937447', // موظف 2
+            '0981860684',
+            '0912345698',
+            '0978451236',
+            '0968352147',
+            '0915874632',
+            // أضف بقية الأرقام الحقيقية هنا...
+        ];
 
-        foreach ($departments as $branchId => $deptIds) {
+         foreach ($departments as $branchId => $deptIds) {
             $branchSupervisors = $supervisors[$branchId];
 
             foreach ($deptIds as $deptIndex => $deptId) {
                 for ($i = 0; $i < 3; $i++) {
                     $idx = $counter - 1;
-                    $phone = '0988232386' . str_pad($counter, 2, '0', STR_PAD_LEFT);
+                    $phone = $realPhones[$idx] ?? ('0988232386' . str_pad($counter, 2, '0', STR_PAD_LEFT));
                     $supervisorId = $branchSupervisors[$deptIndex % count($branchSupervisors)];
 
                     $userId = DB::table('users')->insertGetId([
@@ -362,7 +385,7 @@ class DemoDataSeeder extends Seeder
                         'updated_at' => now(),
                     ]);
 
-                    DB::table('employee_details')->insert([
+                    $employeeDetailId = DB::table('employee_details')->insertGetId([
                         'user_id' => $userId,
                         'department_id' => $deptId,
                         'supervisor_id' => $supervisorId,
@@ -375,6 +398,7 @@ class DemoDataSeeder extends Seeder
                         'updated_at' => now(),
                     ]);
 
+                    $employeeDetailIds[$userId] = $employeeDetailId;
                     $employees[] = $userId;
                     $employeeSupervisors[$userId] = $supervisorId;
                     $counter++;
@@ -382,9 +406,9 @@ class DemoDataSeeder extends Seeder
             }
         }
 
-        $this->command->info(count($employees) . ' employees created (phones 0988232386-0994469119).');
+        $this->command->info(count($employees) . ' employees created.');
 
-        return [$employees, $employeeSupervisors];
+        return [$employees, $employeeSupervisors, $employeeDetailIds];
     }
 
     // ============ Leave Balances ============
@@ -392,6 +416,7 @@ class DemoDataSeeder extends Seeder
     private function seedLeaveBalances(array $employees, array $leaveTypeIds): void
     {
         $year = now()->year;
+        $insertData = [];
 
         foreach ($employees as $employeeId) {
             foreach ($leaveTypeIds as $code => $typeId) {
@@ -399,16 +424,18 @@ class DemoDataSeeder extends Seeder
                     'annual' => 21, 'sick' => 14, 'emergency' => 5, default => 30,
                 };
 
-                DB::table('leave_balances')->insert([
+                $insertData[] = [
                     'employee_user_id' => $employeeId,
                     'leave_type_id' => $typeId,
                     'year' => $year,
                     'remaining_days' => rand(intval($maxDays * 0.4), $maxDays),
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ];
             }
         }
+
+        DB::table('leave_balances')->insert($insertData);
     }
 
     // ============ Leave Requests ============
@@ -441,7 +468,7 @@ class DemoDataSeeder extends Seeder
 
     // ============ Exception Requests ============
 
-    private function seedExceptionRequests(int $companyId, array $employees, array $exceptionTypeIds): void
+    private function seedExceptionRequests(int $companyId, array $employees, array $exceptionTypeIds, array $employeeDetailIds): void
     {
         $reasons = [
             'Was stuck in traffic due to road closure.',
@@ -454,7 +481,7 @@ class DemoDataSeeder extends Seeder
         foreach (array_slice($employees, 0, 8) as $i => $employeeId) {
             DB::table('exception_requests')->insert([
                 'company_id' => $companyId,
-                'employee_id' => $employeeId,
+                'employee_id' => $employeeDetailIds[$employeeId],
                 'exception_type_id' => $exceptionTypeIds[$i % count($exceptionTypeIds)],
                 'request_date' => Carbon::now()->subDays(rand(0, 10))->toDateString(),
                 'reason' => $reasons[$i % count($reasons)],
@@ -470,6 +497,7 @@ class DemoDataSeeder extends Seeder
     private function seedAttendance(int $companyId, array $employees, array $branches): void
     {
         $employeesByBranch = DB::table('users')->whereIn('id', $employees)->pluck('branch_id', 'id');
+        $logs = [];
 
         foreach ($employees as $employeeId) {
             $branchId = $employeesByBranch[$employeeId];
@@ -490,7 +518,7 @@ class DemoDataSeeder extends Seeder
                 $checkIn = $date->copy()->setTime($status === 'late' ? rand(8, 9) : rand(7, 8), rand(0, 59));
                 $checkOut = $checkIn->copy()->addHours(8)->addMinutes(rand(-15, 30));
 
-                DB::table('attendance_logs')->insert([
+                $logs[] = [
                     'company_id' => $companyId,
                     'employee_user_id' => $employeeId,
                     'branch_id' => $branchId,
@@ -501,8 +529,13 @@ class DemoDataSeeder extends Seeder
                     'status' => $status,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ];
             }
+        }
+
+        // إدخال مجمع لزيادة كفاءة الأداء
+        foreach (array_chunk($logs, 100) as $chunk) {
+            DB::table('attendance_logs')->insert($chunk);
         }
     }
 
@@ -721,9 +754,11 @@ class DemoDataSeeder extends Seeder
             ['title' => 'Payroll ready', 'body' => 'Your latest payslip is now available.', 'type' => 'payroll'],
         ];
 
+        $notifications = [];
+
         foreach ($userIds as $userId) {
             foreach ($samples as $n) {
-                DB::table('notifications')->insert([
+                $notifications[] = [
                     'company_id' => $companyId,
                     'user_id' => $userId,
                     'title' => $n['title'],
@@ -732,8 +767,10 @@ class DemoDataSeeder extends Seeder
                     'is_read' => rand(0, 1) === 1,
                     'created_at' => now()->subHours(rand(1, 72)),
                     'updated_at' => now(),
-                ]);
+                ];
             }
         }
+
+        DB::table('notifications')->insert($notifications);
     }
 }
