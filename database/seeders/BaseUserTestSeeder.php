@@ -18,8 +18,8 @@ class BaseUserTestSeeder extends Seeder
 {
     public function run(): void
     {
-    $employeePhone = '0791234567';
-    $supervisorPhone = '0799999999';
+    $employeePhone = '0991236665';
+    $supervisorPhone = '0991726600';
     $branchManagerPhone = '0798888888';
     $secondSupervisorPhone = '0797777777';
     $ownerTestPhone = '0932556713'; // ⚠️ حط هنا رقمك الحقيقي (نفس شريحة SMS Gateway)

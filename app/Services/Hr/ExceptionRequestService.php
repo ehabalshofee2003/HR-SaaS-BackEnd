@@ -15,7 +15,7 @@ class ExceptionRequestService
         private ExceptionRequestRepository $repository
     ) {}
 
-    // ================= دوال Branch Manager (جديدة) =================
+    // ================= دوال Branch Manager =================
 
     public function list(User $manager, array $filters)
     {
@@ -53,8 +53,6 @@ class ExceptionRequestService
             'manager_note' => $note,
         ]);
 
-        // TODO: إشعار المالك بالطلب المُحال (يتضمن manager_note بمحتوى الإشعار)
-
         return $this->repository->findForBranch($id, $branchId);
     }
 
@@ -78,12 +76,10 @@ class ExceptionRequestService
             'rejection_reason' => $reason,
         ]);
 
-        // TODO: إشعار الموظف والمشرف بالرفض
-
         return $this->repository->findForBranch($id, $branchId);
     }
 
-    // ================= دوال Employee Mobile (الأصلية — لم تُمس، فقط اسم الدالة صُحح) =================
+    // ================= دوال Employee Mobile =================
 
     public function getAll($user)
     {
@@ -101,42 +97,42 @@ class ExceptionRequestService
         return $this->repository->findEmployeeException((int)$id, $employeeId, $companyId);
     }
 
-public function store($user, StoreExceptionRequest $request)
-{
-    $companyId = $user->getCurrentCompanyId();
-    $employeeId = $user->employeeDetail->id;
+    public function store($user, StoreExceptionRequest $request)
+    {
+        $companyId = $user->getCurrentCompanyId();
+        $employeeId = $user->employeeDetail->id;
 
-    $path = null;
+        $path = null;
 
-    if ($request->hasFile('attachment')) {
-        $path = $request->file('attachment')->store('exceptions', 'public');
-    }
-
-    $data = [
-        'company_id'         => $companyId,
-        'employee_id'        => $employeeId,
-        'exception_type_id'  => $request->exception_type_id,
-        'request_date'       => now()->toDateString(), // تلقائي — لا يوجد حقل تاريخ بالواجهة
-        'reason'             => $request->reason,
-        'attachment'         => $path,
-        'status'             => 'pending',
-    ];
-
-    try {
-        DB::beginTransaction();
-        $exceptionRequest = $this->repository->create($data);
-        DB::commit();
-
-        return $exceptionRequest;
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        if ($path) {
-            Storage::disk('public')->delete($path);
+        if ($request->hasFile('attachment')) {
+            $path = $request->file('attachment')->store('exceptions', 'public');
         }
-        throw $e;
+
+        $data = [
+            'company_id'        => $companyId,
+            'employee_id'       => $employeeId,
+            'exception_type_id' => $request->exception_type_id,
+            'request_date'      => now()->toDateString(),
+            'reason'            => $request->reason,
+            'attachment'        => $path,
+            'status'            => 'pending',
+        ];
+
+        try {
+            DB::beginTransaction();
+            $exceptionRequest = $this->repository->create($data);
+            DB::commit();
+
+            return $exceptionRequest->load('exceptionType');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($path) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $e;
+        }
     }
-}
 
     public function cancel($user, $id)
     {
@@ -149,10 +145,11 @@ public function store($user, StoreExceptionRequest $request)
             return null;
         }
 
-        return $this->repository->updateStatus_Legacy($exceptionRequest, 'cancelled') ? $exceptionRequest->refresh() : null;
+        return $this->repository->updateStatus_Legacy($exceptionRequest, 'cancelled') ? $exceptionRequest->refresh()->load('exceptionType') : null;
     }
+
     public function getFormData(): array
-{
-    return $this->repository->getActiveTypes();
-}
+    {
+        return $this->repository->getActiveTypes();
+    }
 }

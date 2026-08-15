@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 class ExceptionRequestRepository
 {
-    // ================= دوال Branch Manager (جديدة) =================
+    // ================= دوال Branch Manager =================
 
     public function paginateForBranch(int $branchId, array $filters, int $perPage = 15)
     {
@@ -63,19 +63,22 @@ class ExceptionRequestRepository
         DB::table('exception_requests')->where('id', $id)->update($data);
     }
 
-    // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
+    // ================= دوال Employee Mobile =================
 
     public function getEmployeeExceptions(int $employeeId, int $companyId)
     {
-        return ExceptionRequest::where('employee_id', $employeeId)
+        return ExceptionRequest::with('exceptionType')
+            ->where('employee_id', $employeeId)
             ->where('company_id', $companyId)
+            ->where('status', '!=', 'cancelled') // 👈 استبعاد الطلبات الملغاة من القائمة
             ->latest()
             ->paginate(15);
     }
 
     public function findEmployeeException(int $id, int $employeeId, int $companyId): ?ExceptionRequest
     {
-        return ExceptionRequest::where('id', $id)
+        return ExceptionRequest::with('exceptionType')
+            ->where('id', $id)
             ->where('employee_id', $employeeId)
             ->where('company_id', $companyId)
             ->first();
@@ -90,12 +93,13 @@ class ExceptionRequestRepository
     {
         return $exceptionRequest->update(['status' => $status]);
     }
+
     public function getActiveTypes(): array
-{
-    return DB::table('exception_types')
-        ->where('is_active', true)
-        ->select('id', 'name', 'slug')
-        ->get()
-        ->toArray();
-}
+    {
+        return DB::table('exception_types')
+            ->where('is_active', true)
+            ->select('id', 'name', 'slug')
+            ->get()
+            ->toArray();
+    }
 }

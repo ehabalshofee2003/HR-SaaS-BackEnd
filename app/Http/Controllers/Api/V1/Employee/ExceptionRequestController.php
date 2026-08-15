@@ -63,7 +63,7 @@ class ExceptionRequestController extends Controller
         }
 
         return response()->json([
-            'data' => new ExceptionRequestResource($exception->load('exceptionType'))
+            'data' => new ExceptionRequestResource($exception)
         ]);
     }
 
@@ -81,11 +81,12 @@ class ExceptionRequestController extends Controller
 
         return response()->json([
             'message' => 'Exception request cancelled successfully.',
-            'data'    => new ExceptionRequestResource($exception->load('exceptionType'))
+            'data'    => new ExceptionRequestResource($exception)
         ]);
     }
-    public function formData()
-{
-    return response()->json(['data' => $this->service->getFormData()]);
-}
+
+    public function formData(): JsonResponse
+    {
+        return response()->json(['data' => $this->service->getFormData()]);
+    }
 }

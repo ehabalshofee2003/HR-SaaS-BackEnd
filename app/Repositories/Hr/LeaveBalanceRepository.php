@@ -15,7 +15,7 @@ class LeaveBalanceRepository
         return DB::table('leave_balances')
             ->join('employee_details', 'leave_balances.employee_user_id', '=', 'employee_details.user_id')
             ->join('departments', 'employee_details.department_id', '=', 'departments.id')
-            ->join('leave_policies', 'leave_balances.policy_id', '=', 'leave_policies.id')
+            ->join('leave_types', 'leave_balances.leave_type_id', '=', 'leave_types.id')
             ->where('leave_balances.employee_user_id', $employeeUserId)
             ->where('departments.branch_id', $branchId)
             ->where('leave_balances.year', Carbon::now()->year)
@@ -23,18 +23,18 @@ class LeaveBalanceRepository
                 'leave_balances.id',
                 'leave_balances.remaining_days',
                 'leave_balances.year',
-                'leave_policies.leave_type',
-                'leave_policies.days_per_year'
+                'leave_types.name as leave_type_name',
+                'leave_types.max_days_per_year'
             )
             ->get()
             ->toArray();
     }
 
-    public function findBalance(int $employeeUserId, int $policyId, int $year): ?object
+    public function findBalance(int $employeeUserId, int $leaveTypeId, int $year): ?object
     {
         return DB::table('leave_balances')
             ->where('employee_user_id', $employeeUserId)
-            ->where('policy_id', $policyId)
+            ->where('leave_type_id', $leaveTypeId)
             ->where('year', $year)
             ->first();
     }
@@ -46,27 +46,28 @@ class LeaveBalanceRepository
             ->decrement('remaining_days', $days, ['updated_at' => Carbon::now()]);
     }
 
-    // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
+    // ================= دوال Employee Mobile =================
 
     public function getEmployeeCurrentYearBalances(int $employeeUserId)
     {
         return LeaveBalance::where('employee_user_id', $employeeUserId)
             ->where('year', now()->year)
-            ->with('policy')
+            ->with('leaveType')
             ->get();
     }
+
     public function getCombinedBalance(int $employeeUserId): array
     {
         $result = DB::table('leave_balances')
-            ->join('leave_policies', 'leave_balances.policy_id', '=', 'leave_policies.id')
+            ->join('leave_types', 'leave_balances.leave_type_id', '=', 'leave_types.id')
             ->where('leave_balances.employee_user_id', $employeeUserId)
             ->where('leave_balances.year', Carbon::now()->year)
-            ->selectRaw('SUM(leave_policies.days_per_year) as total, SUM(leave_balances.remaining_days) as remaining')
+            ->selectRaw('SUM(leave_types.max_days_per_year) as total, SUM(leave_balances.remaining_days) as remaining')
             ->first();
 
-    return [
-        'total_days' => (int) ($result->total ?? 0),
-        'remaining_days' => (int) ($result->remaining ?? 0),
-    ];
+        return [
+            'total_days' => (int) ($result->total ?? 0),
+            'remaining_days' => (int) ($result->remaining ?? 0),
+        ];
     }
 }

@@ -59,23 +59,19 @@ class LeaveRequestService
         return DB::transaction(function () use ($id, $request, $manager, $note, $companyId, $leaveType, $days, $branchId) {
 
             // خصم الرصيد فقط إذا لم تكن الإجازة Unpaid
-            if ($leaveType && $leaveType->code !== 'unpaid') {
-                $policy = $this->leaveRequestRepository->getPolicyForLeaveType($companyId, $leaveType->code);
+// خصم الرصيد فقط إذا كانت الإجازة مدفوعة (is_paid = true)
+if ($leaveType && $leaveType->is_paid) {
+    $year = Carbon::parse($request->start_date)->year;
+    $balance = $this->leaveBalanceRepository->findBalance($request->employee_id, $leaveType->id, $year);
 
-                if ($policy) {
-                    $year = Carbon::parse($request->start_date)->year;
-                    $balance = $this->leaveBalanceRepository->findBalance($request->employee_id, $policy->id, $year);
+    if ($balance && $balance->remaining_days < $days) {
+        throw new Exception('لا يمكن الموافقة — الإجازة تتجاوز الرصيد المتبقي للموظف.');
+    }
 
-                    if ($balance && $balance->remaining_days < $days) {
-                        throw new Exception('لا يمكن الموافقة — الإجازة تتجاوز الرصيد المتبقي للموظف.');
-                    }
-
-                    if ($balance) {
-                        $this->leaveBalanceRepository->deductDays($balance->id, $days);
-                    }
-                }
-            }
-
+    if ($balance) {
+        $this->leaveBalanceRepository->deductDays($balance->id, $days);
+    }
+}
             $this->leaveRequestRepository->updateStatus($id, [
                 'status' => 'approved',
                 'approver_id' => $manager->id,

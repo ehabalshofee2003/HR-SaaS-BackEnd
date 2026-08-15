@@ -84,14 +84,7 @@ class LeaveRequestRepository
         return DB::table('leave_types')->where('id', $leaveTypeId)->first();
     }
 
-    public function getPolicyForLeaveType(int $companyId, string $leaveTypeCode): ?object
-    {
-        return DB::table('leave_policies')
-            ->where('company_id', $companyId)
-            ->where('leave_type', $leaveTypeCode)
-            ->whereNull('deleted_at')
-            ->first();
-    }
+ 
 
     // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
 
