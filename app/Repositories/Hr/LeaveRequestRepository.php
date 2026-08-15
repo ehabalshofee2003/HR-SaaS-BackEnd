@@ -92,6 +92,7 @@ class LeaveRequestRepository
     {
         $query = LeaveRequest::where('employee_id', $employeeId)
             ->with(['leaveType', 'approver'])
+            ->where('status', '!=', 'cancelled') // 👈 استبعاد الطلبات الملغاة من القائمة
             ->latest();
 
         if ($status) {
