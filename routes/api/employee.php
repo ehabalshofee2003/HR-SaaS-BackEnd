@@ -123,7 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Epic 10: Attendance (الحضور والانصراف) 
     // ==========================================
     Route::get('attendance/today', [AttendanceController::class, 'today']);
-    Route::get('attendance/history', [AttendanceController::class, 'history']);
+    Route::get('attendance/history', [AttendanceController::class, 'getAttendanceHistory']);
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
     Route::get('/attendance/summary', [AttendanceController::class, 'summary']);
