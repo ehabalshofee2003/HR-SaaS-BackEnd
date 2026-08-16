@@ -109,4 +109,5 @@ class TaskController extends Controller
             'data' => new TaskDetailResource($result['task']),
         ]);
     }
+    
 }

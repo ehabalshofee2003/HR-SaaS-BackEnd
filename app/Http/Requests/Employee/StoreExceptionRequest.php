@@ -13,7 +13,8 @@ class StoreExceptionRequest extends FormRequest
         return [
             'exception_type_id' => 'required|integer|exists:exception_types,id',
             'reason' => 'required|string|max:2000',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'attachments' => 'nullable|array|max:3',
+            'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
         ];
     }
 }

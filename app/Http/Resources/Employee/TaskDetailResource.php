@@ -23,10 +23,10 @@ class TaskDetailResource extends JsonResource
                 ? Carbon::parse($this->completed_at)->format('Y-m-d H:i:s')
                 : null,
             'reward_amount' => $this->reward_amount,
-            'supervisor'    => [
+            'supervisor' => [
                 'id'   => $this->whenLoaded('supervisor') ? $this->supervisor->id : null,
                 'name' => $this->whenLoaded('supervisor') && $this->supervisor->profile
-                    ? $this->supervisor->profile->first_name . ' ' . $this->supervisor->profile->last_name
+                    ? $this->supervisor->profile->full_name
                     : null,
             ],
         ];

@@ -97,42 +97,43 @@ class ExceptionRequestService
         return $this->repository->findEmployeeException((int)$id, $employeeId, $companyId);
     }
 
-    public function store($user, StoreExceptionRequest $request)
-    {
-        $companyId = $user->getCurrentCompanyId();
-        $employeeId = $user->employeeDetail->id;
+public function store($user, StoreExceptionRequest $request)
+{
+    $companyId = $user->getCurrentCompanyId();
+    $employeeId = $user->employeeDetail->id;
 
-        $path = null;
+    $path = null;
 
-        if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('exceptions', 'public');
-        }
-
-        $data = [
-            'company_id'        => $companyId,
-            'employee_id'       => $employeeId,
-            'exception_type_id' => $request->exception_type_id,
-            'request_date'      => now()->toDateString(),
-            'reason'            => $request->reason,
-            'attachment'        => $path,
-            'status'            => 'pending',
-        ];
-
-        try {
-            DB::beginTransaction();
-            $exceptionRequest = $this->repository->create($data);
-            DB::commit();
-
-            return $exceptionRequest->load('exceptionType');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            if ($path) {
-                Storage::disk('public')->delete($path);
-            }
-            throw $e;
-        }
+    if ($request->hasFile('attachments')) {
+        // الجدول عنده عمود واحد بس للمرفق حاليًا — نأخذ أول ملف فقط
+        $path = $request->file('attachments')[0]->store('exceptions', 'public');
     }
+
+    $data = [
+        'company_id'        => $companyId,
+        'employee_id'       => $employeeId,
+        'exception_type_id' => $request->exception_type_id,
+        'request_date'      => now()->toDateString(),
+        'reason'            => $request->reason,
+        'attachment'        => $path,
+        'status'            => 'pending',
+    ];
+
+    try {
+        DB::beginTransaction();
+        $exceptionRequest = $this->repository->create($data);
+        DB::commit();
+
+        return $exceptionRequest->load('exceptionType');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
+        throw $e;
+    }
+}
 
     public function cancel($user, $id)
     {
