@@ -6,7 +6,7 @@ use App\Repositories\Hr\QrCodeRepository;
 use App\Repositories\Hr\AttendanceRepository;
 use App\Models\Identity\User;
 use Carbon\Carbon;
-
+use Exception;
 class AttendanceService
 {
     public function __construct(
@@ -128,5 +128,87 @@ class AttendanceService
         $officialStart = now()->copy()->setTime(8, 0);
 
         return now()->gt($officialStart) ? 'late' : 'present';
+    }
+        // ================= دوال Branch Manager (جديدة) =================
+
+    public function list(User $manager, array $filters)
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->attendanceRepository->paginateForBranch($branchId, $filters);
+    }
+
+public function createManual(User $manager, array $data): object
+{
+    $branchId = $manager->getCurrentBranchId();
+    $companyId = $manager->getCurrentCompanyId();
+
+    if (!$this->attendanceRepository->employeeBelongsToBranch($data['employee_user_id'], $branchId)) {
+        throw new Exception('الموظف المحدد لا ينتمي إلى هذا الفرع.');
+    }
+
+    $checkIn = Carbon::parse($data['date'] . ' ' . $data['check_in']);
+    $checkOut = !empty($data['check_out'])
+        ? Carbon::parse($data['date'] . ' ' . $data['check_out'])
+        : null;
+
+    $workHours = $checkOut ? round($checkIn->diffInMinutes($checkOut) / 60, 2) : 0;
+
+    $recordId = $this->attendanceRepository->createManualEntry([
+        'company_id' => $companyId,
+        'employee_user_id' => $data['employee_user_id'],
+        'branch_id' => $branchId,
+        'check_in' => $checkIn,
+        'check_out' => $checkOut,
+        'work_hours' => $workHours,
+        'status' => $data['status'],
+        'reason' => $data['reason'],
+        'reviewed_by_manager' => $manager->id,
+    ]);
+
+    $this->attendanceRepository->logAudit([
+        'user_id' => $manager->id,
+        'company_id' => $companyId,
+        'action' => 'create_manual_attendance',
+        'entity_id' => $recordId,
+        'new_values' => json_encode($data),
+    ]);
+
+    return $this->attendanceRepository->findForBranch($recordId, $branchId);
+}
+
+    public function update(int $id, array $data, User $manager): object
+    {
+        $branchId = $manager->getCurrentBranchId();
+        $record = $this->attendanceRepository->findForBranch($id, $branchId);
+
+        if (!$record) {
+            throw new Exception('سجل الحضور غير موجود.', 404);
+        }
+
+        if (!empty($data['check_in']) && !empty($data['check_out'])) {
+            $data['work_hours'] = round(
+                Carbon::parse($data['check_in'])->diffInMinutes(Carbon::parse($data['check_out'])) / 60,
+                2
+            );
+        }
+
+        $this->attendanceRepository->update($id, $data);
+
+        $this->attendanceRepository->logAudit([
+            'user_id' => $manager->id,
+            'company_id' => $manager->getCurrentCompanyId(),
+            'action' => 'update_attendance',
+            'entity_id' => $id,
+            'old_values' => json_encode($record),
+            'new_values' => json_encode($data),
+        ]);
+
+        return $this->attendanceRepository->findForBranch($id, $branchId);
+    }
+
+    public function getExportData(User $manager, array $filters): array
+    {
+        $branchId = $manager->getCurrentBranchId();
+        return $this->attendanceRepository->getForExport($branchId, $filters);
     }
 }

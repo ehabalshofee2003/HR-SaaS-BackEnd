@@ -62,8 +62,8 @@ if (!$isKnown) {
         $this->notificationService->send([
             'company_id' => $companyId,
             'user_id' => $user->id,
-            'title' => 'تسجيل دخول من جهاز جديد',
-            'body' => 'تم تسجيل الدخول إلى حسابك من جهاز جديد. إذا لم تكن أنت، تواصل مع الإدارة فورًا.',
+            'title' => 'New device login',
+            'body' => 'Your account was logged into from a new device. If this was not you, contact your administrator immediately.',
             'type' => 'system',
         ]);
     }

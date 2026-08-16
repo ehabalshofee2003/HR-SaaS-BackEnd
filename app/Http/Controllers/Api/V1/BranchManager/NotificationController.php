@@ -18,7 +18,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $user = User::find(Auth::id());
-        if (!$user) throw new Exception('غير مصرح.', 401);
+        if (!$user) throw new Exception('Unauthorized.', 401);
 
         $notifications = $this->notificationService->list($user, $request->only(['is_read', 'type']));
 
@@ -28,20 +28,20 @@ class NotificationController extends Controller
     public function markRead(Request $request, $id)
     {
         $user = User::find(Auth::id());
-        if (!$user) throw new Exception('غير مصرح.', 401);
+        if (!$user) throw new Exception('Unauthorized.', 401);
 
         $this->notificationService->markRead((int) $id, $user);
 
-        return response()->json(['message' => 'تم تحديد الإشعار كمقروء.']);
+        return response()->json(['message' => 'Notification marked as read.']);
     }
 
     public function markAllRead(Request $request)
     {
         $user = User::find(Auth::id());
-        if (!$user) throw new Exception('غير مصرح.', 401);
+        if (!$user) throw new Exception('Unauthorized.', 401);
 
         $this->notificationService->markAllRead($user);
 
-        return response()->json(['message' => 'تم تحديد كل الإشعارات كمقروءة.']);
+        return response()->json(['message' => 'All notifications marked as read.']);
     }
 }

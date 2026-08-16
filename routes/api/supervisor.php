@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\Supervisor\EmployeeTaskController;
 use App\Http\Controllers\Api\V1\Supervisor\EmployeeLeaveController;
 use App\Http\Controllers\Api\V1\Supervisor\TaskController;
 use App\Http\Controllers\Api\V1\Supervisor\ProfileController;
+use App\Http\Controllers\Api\V1\Supervisor\QrCodeController;
+use App\Http\Controllers\Api\V1\Supervisor\LeaveRequestController;
 
 Route::get('/employees', [EmployeeController::class, 'index']);
 Route::get('/employees/{id}', [EmployeeController::class, 'show']);
@@ -22,3 +24,11 @@ Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
 
 Route::get('/profile', [ProfileController::class, 'show']);
 Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+
+Route::post('/qr-codes/generate', [QrCodeController::class, 'generate']);
+Route::get('/employees/{id}/attendance', [EmployeeController::class, 'attendance']);
+
+Route::get('/leaves', [LeaveRequestController::class, 'index']);
+Route::get('/leaves/{id}', [LeaveRequestController::class, 'show']);
+Route::post('/leaves/{id}/approve', [LeaveRequestController::class, 'approve']);
+Route::post('/leaves/{id}/reject', [LeaveRequestController::class, 'reject']);

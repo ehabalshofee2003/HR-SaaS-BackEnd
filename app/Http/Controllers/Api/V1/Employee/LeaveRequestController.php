@@ -72,6 +72,7 @@ public function index(Request $request): JsonResponse
             ]
         ]);
     }
+    
 public function store(StoreLeaveRequestRequest $request): JsonResponse
 {
     $user = User::find(Auth::id());
