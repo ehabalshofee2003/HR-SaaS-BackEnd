@@ -127,4 +127,97 @@ class SupervisorAttendanceRepository
 
         DB::table('attendance_logs')->where('id', $logId)->update($updateData);
     }
+    public function listForSupervisor(int $supervisorId, array $filters): array
+    {
+        $date = $filters['date'] ?? Carbon::today()->toDateString();
+
+        $query = DB::table('attendance_logs as a')
+            ->join('users as u', 'u.id', '=', 'a.employee_user_id')
+            ->join('user_profiles as p', 'p.user_id', '=', 'u.id')
+            ->join('employee_details as ed', 'ed.user_id', '=', 'u.id')
+            ->where('ed.supervisor_id', $supervisorId)
+            ->whereDate('a.check_in', $date)
+            ->whereNull('a.deleted_at')
+            ->whereNull('ed.deleted_at')
+            ->select([
+                'a.id', 'p.full_name as employee_name', 'a.type',
+                'a.status', 'a.check_in', 'a.check_out', 'a.work_hours',
+            ]);
+
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $query->where('a.status', $filters['status']);
+        }
+
+        return $query->orderBy('a.check_in')->get()->all();
+    }
+
+    public function findForSupervisor(int $id, int $supervisorId): ?object
+    {
+        return DB::table('attendance_logs as a')
+            ->join('employee_details as ed', 'ed.user_id', '=', 'a.employee_user_id')
+            ->where('a.id', $id)
+            ->where('ed.supervisor_id', $supervisorId)
+            ->whereNull('a.deleted_at')
+            ->select('a.*')
+            ->first();
+    }
+
+    public function employeeBelongsToSupervisor(int $employeeUserId, int $supervisorId): bool
+    {
+        return DB::table('employee_details')
+            ->where('user_id', $employeeUserId)
+            ->where('supervisor_id', $supervisorId)
+            ->whereNull('deleted_at')
+            ->exists();
+    }
+
+    public function update(int $id, array $data): void
+    {
+        $data['updated_at'] = Carbon::now();
+        DB::table('attendance_logs')->where('id', $id)->update($data);
+    }
+
+    public function createManual(array $data): int
+    {
+        return DB::table('attendance_logs')->insertGetId(array_merge($data, [
+            'type' => 'manual',
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]));
+    }
+    public function findTodayLog(int $employeeUserId, string $date): ?object
+    {
+        return DB::table('attendance_logs')
+            ->where('employee_user_id', $employeeUserId)
+            ->whereDate('check_in', $date)
+            ->whereNull('deleted_at')
+            ->first();
+    }
+ 
+    public function monthlySummaryBySupervisor(int $supervisorId): array
+    {
+        $rows = DB::table('attendance_logs as a')
+            ->join('employee_details as ed', 'ed.user_id', '=', 'a.employee_user_id')
+            ->where('ed.supervisor_id', $supervisorId)
+            ->whereMonth('a.check_in', Carbon::now()->month)
+            ->whereYear('a.check_in', Carbon::now()->year)
+            ->whereNull('a.deleted_at')
+            ->select(['a.check_in', 'a.status'])
+            ->get();
+
+        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $summary = [];
+        foreach ($days as $day) {
+            $summary[$day] = ['present' => 0, 'late' => 0, 'absent' => 0];
+        }
+
+        foreach ($rows as $row) {
+            $dayName = Carbon::parse($row->check_in)->format('l');
+            if (isset($summary[$dayName][$row->status])) {
+                $summary[$dayName][$row->status]++;
+            }
+        }
+
+        return collect($summary)->map(fn($counts, $day) => array_merge(['day' => $day], $counts))->values()->all();
+    }
 }

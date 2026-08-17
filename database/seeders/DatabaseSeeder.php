@@ -6,18 +6,16 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // نتحقق أننا في بيئة التطوير المحلية لمنع مسح بيانات السيرفر الحقيقي بالخطأ
-        if (app()->environment('local')) {
-            $this->call([
-                DevTestDataSeeder::class,
-            ]);
-        } else {
-            $this->command->warn('تم إيقاف تشغيل البيانات الوهمية لأن البيئة ليست Local.');
-        }
+        $this->call([
+            PermissionSeeder::class,        // catalog of permissions (already exists in project)
+            SubscriptionPlanSeeder::class,
+            SuperAdminSeeder::class,
+            OrganizationSeeder::class,      // owner + company + branches + departments + managers + supervisors
+            StaffSeeder::class,             // leave types, exception types, employees
+            OperationsSeeder::class,        // attendance, leaves, exceptions, tasks
+            PayrollWorkshopSeeder::class,   // payroll, workshops, announcements, complaints, resignations, notifications
+        ]);
     }
 }

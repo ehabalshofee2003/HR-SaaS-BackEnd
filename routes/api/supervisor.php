@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Supervisor\TaskController;
 use App\Http\Controllers\Api\V1\Supervisor\ProfileController;
 use App\Http\Controllers\Api\V1\Supervisor\QrCodeController;
 use App\Http\Controllers\Api\V1\Supervisor\LeaveRequestController;
+use App\Http\Controllers\Api\V1\Supervisor\AttendanceManagementController;
 
 Route::get('/employees', [EmployeeController::class, 'index']);
 Route::get('/employees/{id}', [EmployeeController::class, 'show']);
@@ -32,3 +33,7 @@ Route::get('/leaves', [LeaveRequestController::class, 'index']);
 Route::get('/leaves/{id}', [LeaveRequestController::class, 'show']);
 Route::post('/leaves/{id}/approve', [LeaveRequestController::class, 'approve']);
 Route::post('/leaves/{id}/reject', [LeaveRequestController::class, 'reject']);
+
+Route::get('/attendance', [AttendanceManagementController::class, 'index']);
+Route::put('/attendance/{id}', [AttendanceManagementController::class, 'update']);
+Route::post('/attendance/manual', [AttendanceManagementController::class, 'storeManual']);
