@@ -8,6 +8,10 @@ use App\Http\Requests\Supervisor\UpdateEmployeeRequest;
 use App\Services\Supervisor\EmployeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Identity\User;
+use App\Http\Requests\Supervisor\StoreEmployeeRequest;
+use Exception;
+
 
 class EmployeeController extends Controller
 {
@@ -65,5 +69,18 @@ class EmployeeController extends Controller
         $attendance = $this->employeeService->attendanceToday($id, $supervisorId);
 
         return response()->json(['success' => true, 'data' => $attendance]);
+    }
+    public function store(StoreEmployeeRequest $request): JsonResponse
+    {
+        $supervisorId = Auth::id();
+
+        if (!$supervisorId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
+        }
+
+        $supervisor = \App\Models\Identity\User::find($supervisorId);
+        $employee = $this->employeeService->create($supervisor, $request->validated());
+
+        return response()->json(['success' => true, 'data' => $employee], 201);
     }
 }

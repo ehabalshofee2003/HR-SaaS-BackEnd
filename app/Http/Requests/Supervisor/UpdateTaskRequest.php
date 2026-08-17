@@ -14,6 +14,7 @@ class UpdateTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'employee_id' => ['sometimes', 'integer'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'due_date' => ['sometimes', 'date', 'date_format:Y-m-d'],

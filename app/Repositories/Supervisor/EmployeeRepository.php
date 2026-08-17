@@ -33,6 +33,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             ->select([
                 'u.id', 'p.full_name', 'u.phone', 'ed.basic_salary', 'ed.hire_date',
                 'ed.contract_type', 'p.national_id', 'd.name as department_name',
+                'ed.job_title', 'ed.employment_status',
             ])
             ->first();
     }

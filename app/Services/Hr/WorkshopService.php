@@ -124,13 +124,12 @@ class WorkshopService
     }
 
     // ================= دوال Employee Mobile (الأصلية — لم تُمس) =================
-
-    private function getUserContext($user)
-    {
-        $companyId = $user->getCurrentCompanyId();
-        $branchId = $user->employeeDetail?->department?->branch_id;
-        return [$companyId, $branchId];
-    }
+private function getUserContext($user)
+{
+    $companyId = $user->getCurrentCompanyId();
+    $branchId = $user->getCurrentBranchId();
+    return [$companyId, $branchId];
+}
 
     public function getAll($user)
     {

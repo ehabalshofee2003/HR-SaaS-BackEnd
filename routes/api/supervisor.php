@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\V1\Supervisor\ProfileController;
 use App\Http\Controllers\Api\V1\Supervisor\QrCodeController;
 use App\Http\Controllers\Api\V1\Supervisor\LeaveRequestController;
 use App\Http\Controllers\Api\V1\Supervisor\AttendanceManagementController;
+use App\Http\Controllers\Api\V1\Supervisor\ExceptionController;
+use App\Http\Controllers\Api\V1\Employee\WorkshopController;
+use App\Http\Controllers\Api\V1\Supervisor\EmployeeDocumentController;
 
 Route::get('/employees', [EmployeeController::class, 'index']);
 Route::get('/employees/{id}', [EmployeeController::class, 'show']);
@@ -16,6 +19,13 @@ Route::put('/employees/{id}', [EmployeeController::class, 'update']);
 Route::get('/employees/{id}/attendance', [EmployeeController::class, 'attendance']);
 Route::get('/employees/{id}/tasks', [EmployeeTaskController::class, 'index']);
 Route::get('/employees/{id}/leaves', [EmployeeLeaveController::class, 'index']);
+Route::post('/employees', [EmployeeController::class, 'store']);
+
+Route::get('/employees/{employeeId}/documents', [EmployeeDocumentController::class, 'index']);
+Route::post('/employees/{employeeId}/documents', [EmployeeDocumentController::class, 'store']);
+Route::get('/employees/{employeeId}/documents/{documentId}/download', [EmployeeDocumentController::class, 'download']);
+Route::delete('/employees/{employeeId}/documents/{documentId}', [EmployeeDocumentController::class, 'destroy']);
+
 
 
 Route::get('/tasks', [TaskController::class, 'index']);
@@ -37,3 +47,17 @@ Route::post('/leaves/{id}/reject', [LeaveRequestController::class, 'reject']);
 Route::get('/attendance', [AttendanceManagementController::class, 'index']);
 Route::put('/attendance/{id}', [AttendanceManagementController::class, 'update']);
 Route::post('/attendance/manual', [AttendanceManagementController::class, 'storeManual']);
+
+Route::get('/exceptions', [ExceptionController::class, 'index']);
+Route::get('/exceptions/{id}', [ExceptionController::class, 'show']);
+Route::post('/exceptions/{id}/forward-to-owner', [ExceptionController::class, 'forwardToOwner']);
+Route::post('/exceptions/{id}/reject', [ExceptionController::class, 'reject']);
+
+Route::get('/workshops', [WorkshopController::class, 'index']);
+Route::post('/workshops/{id}/register', [WorkshopController::class, 'register']);
+Route::post('/workshops/{id}/cancel', [WorkshopController::class, 'cancel']);
+
+Route::get('/employees/{employeeId}/documents', [EmployeeDocumentController::class, 'index']);
+Route::post('/employees/{employeeId}/documents', [EmployeeDocumentController::class, 'store']);
+Route::get('/employees/{employeeId}/documents/{documentId}/download', [EmployeeDocumentController::class, 'download']);
+Route::delete('/employees/{employeeId}/documents/{documentId}', [EmployeeDocumentController::class, 'destroy']);

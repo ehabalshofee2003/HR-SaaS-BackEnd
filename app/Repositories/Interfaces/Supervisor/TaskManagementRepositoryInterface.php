@@ -9,4 +9,5 @@ interface TaskManagementRepositoryInterface
     public function create(array $data): int;
     public function update(int $id, array $data): void;
     public function delete(int $id): void;
+    public function findForSupervisor(int $id, int $supervisorId): ?object;
 }

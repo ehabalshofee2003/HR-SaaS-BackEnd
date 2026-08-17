@@ -56,4 +56,15 @@ class TaskManagementRepository implements TaskManagementRepositoryInterface
     {
         DB::table('tasks')->where('id', $id)->update(['deleted_at' => now()]);
     }
+    public function findForSupervisor(int $id, int $supervisorId): ?object
+{
+    return DB::table('tasks as t')
+        ->join('users as u', 'u.id', '=', 't.employee_user_id')
+        ->join('user_profiles as p', 'p.user_id', '=', 'u.id')
+        ->where('t.id', $id)
+        ->where('t.supervisor_user_id', $supervisorId)
+        ->whereNull('t.deleted_at')
+        ->select(['t.*', 'p.full_name as employee_name'])
+        ->first();
+}
 }

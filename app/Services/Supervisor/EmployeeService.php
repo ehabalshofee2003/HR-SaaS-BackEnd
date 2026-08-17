@@ -5,6 +5,10 @@ namespace App\Services\Supervisor;
 use App\Repositories\Interfaces\Supervisor\EmployeeRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use App\Models\Identity\User;
 
 class EmployeeService
 {
@@ -52,9 +56,50 @@ class EmployeeService
             'hire_date' => $employee->hire_date,
             'contract_type' => $employee->contract_type,
             'national_id' => $employee->national_id,
+            'job_title' => $employee->job_title,
+            'employment_status' => $employee->employment_status,
         ];
     }
+public function create(User $supervisor, array $data): array
+{
+    $branchId = $supervisor->getCurrentBranchId();
 
+    $userId = DB::table('users')->insertGetId([
+        'phone' => $data['phone'],
+        'email' => $data['email'] ?? null,
+        'password_hash' => Hash::make(Str::random(32)),
+        'user_type' => 'employee',
+        'status' => 'active',
+        'branch_id' => $branchId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('user_profiles')->insert([
+        'user_id' => $userId,
+        'full_name' => $data['full_name'],
+        'national_id' => $data['national_id'] ?? null,
+        'date_of_birth' => $data['date_of_birth'] ?? null,
+        'address' => $data['address'] ?? null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('employee_details')->insert([
+        'user_id' => $userId,
+        'department_id' => $data['department_id'],
+        'supervisor_id' => $supervisor->id,
+        'job_title' => $data['job_title'],
+        'contract_type' => $data['contract_type'],
+        'basic_salary' => $data['basic_salary'],
+        'employment_status' => 'active',
+        'hire_date' => $data['hire_date'],
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return $this->get($userId, $supervisor->id);
+}
     public function update(int $id, int $supervisorId, array $data): array
     {
         $employee = $this->repository->find($id, $supervisorId);
@@ -127,4 +172,5 @@ class EmployeeService
 
         return 'absent';
     }
+ 
 }
