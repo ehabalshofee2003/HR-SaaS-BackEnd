@@ -16,7 +16,6 @@ class OperationsSeeder extends Seeder
         $this->seedTasks();
     }
 
-    // ---- Attendance: last 3 months, weekdays only (Friday off) ----
     private function seedAttendance(): void
     {
         $companyId = OrganizationSeeder::$companyId;
@@ -30,24 +29,17 @@ class OperationsSeeder extends Seeder
                 if ($date->isFriday()) continue;
 
                 $roll = rand(1, 100);
-                if ($roll <= 8) continue; // absent (no log)
+                if ($roll <= 8) continue;
 
                 $isLate = $roll <= 22;
-                $checkIn = $date->copy()->setTime(
-                    $isLate ? rand(9, 9) : rand(8, 8),
-                    $isLate ? rand(30, 59) : rand(0, 59)
-                );
+                $checkIn = $date->copy()->setTime($isLate ? 9 : 8, $isLate ? rand(30, 59) : rand(0, 59));
                 $checkOut = $checkIn->copy()->addHours(8)->addMinutes(rand(-10, 30));
 
                 $rows[] = [
-                    'company_id' => $companyId,
-                    'employee_user_id' => $employeeId,
-                    'branch_id' => $branchId,
-                    'check_in' => $checkIn,
-                    'check_out' => $checkOut,
+                    'company_id' => $companyId, 'employee_user_id' => $employeeId, 'branch_id' => $branchId,
+                    'check_in' => $checkIn, 'check_out' => $checkOut,
                     'work_hours' => round($checkIn->diffInMinutes($checkOut) / 60, 2),
-                    'type' => 'qr',
-                    'status' => $isLate ? 'late' : 'present',
+                    'type' => 'qr', 'status' => $isLate ? 'late' : 'present',
                     'created_at' => now(), 'updated_at' => now(),
                 ];
             }
@@ -58,7 +50,6 @@ class OperationsSeeder extends Seeder
         }
     }
 
-    // ---- Leave balances (every employee, every type) + a spread of leave requests ----
     private function seedLeaveBalancesAndRequests(): void
     {
         $year = now()->year;
@@ -74,81 +65,68 @@ class OperationsSeeder extends Seeder
             }
         }
 
-        $reasons = [
-            'Family event out of town.', 'Doctor appointment and recovery.',
-            'Personal matters to attend to.', 'Planned vacation with family.',
-        ];
+        $reasons = ['Family event out of town.', 'Doctor appointment and recovery.', 'Personal matters to attend to.'];
         $statuses = ['pending_manager', 'approved', 'rejected', 'cancelled'];
         $companyId = OrganizationSeeder::$companyId;
 
-        // 15 leave requests spread across random employees
-        $sample = collect(StaffSeeder::$employeeIds)->random(15);
+        $sampleSize = min(4, count(StaffSeeder::$employeeIds));
+        $sample = collect(StaffSeeder::$employeeIds)->random($sampleSize);
+
         foreach ($sample as $i => $employeeId) {
             $start = Carbon::now()->addDays(rand(-60, 30));
             DB::table('leave_requests')->insert([
-                'company_id' => $companyId,
-                'employee_id' => $employeeId,
+                'company_id' => $companyId, 'employee_id' => $employeeId,
                 'leave_type_id' => array_values(StaffSeeder::$leaveTypeIds)[$i % 4],
-                'start_date' => $start->toDateString(),
-                'end_date' => $start->copy()->addDays(rand(1, 4))->toDateString(),
-                'reason' => $reasons[$i % count($reasons)],
-                'status' => $statuses[$i % count($statuses)],
+                'start_date' => $start->toDateString(), 'end_date' => $start->copy()->addDays(rand(1, 4))->toDateString(),
+                'reason' => $reasons[$i % count($reasons)], 'status' => $statuses[$i % count($statuses)],
                 'created_at' => now(), 'updated_at' => now(),
             ]);
         }
     }
 
-    // ---- Exception Requests: mixed statuses across the full workflow ----
     private function seedExceptionRequests(): void
     {
         $reasons = [
             'Stuck in traffic due to road closure.', 'Requesting review of last deduction, recorded by mistake.',
             'Worked extra hours covering a colleague shift.', 'Family emergency required leaving early.',
-            'Public transport delay on the way to work.',
         ];
-        $statuses = ['pending', 'supervisor_reviewed', 'owner_reviewed', 'approved', 'rejected'];
+        $statuses = ['pending', 'pending_manager', 'approved', 'rejected'];
         $companyId = OrganizationSeeder::$companyId;
 
-        $sample = collect(StaffSeeder::$employeeIds)->random(18);
+        $sampleSize = min(4, count(StaffSeeder::$employeeIds));
+        $sample = collect(StaffSeeder::$employeeIds)->random($sampleSize);
+
         foreach ($sample as $i => $employeeId) {
             DB::table('exception_requests')->insert([
                 'company_id' => $companyId,
                 'employee_id' => StaffSeeder::$employeeDetailId[$employeeId],
                 'exception_type_id' => StaffSeeder::$exceptionTypeIds[$i % count(StaffSeeder::$exceptionTypeIds)],
                 'request_date' => Carbon::now()->subDays(rand(0, 60))->toDateString(),
-                'reason' => $reasons[$i % count($reasons)],
-                'status' => $statuses[$i % count($statuses)],
+                'reason' => $reasons[$i % count($reasons)], 'status' => $statuses[$i % count($statuses)],
                 'created_at' => now(), 'updated_at' => now(),
             ]);
         }
     }
 
-    // ---- Tasks: assigned by supervisors to their employees ----
     private function seedTasks(): void
     {
         $titles = [
             'Restock shelves in aisle 3', 'Prepare weekly inventory report', 'Clean and organize storage room',
-            'Update product price tags', 'Train new team member on POS system', 'Reconcile petty cash drawer',
-            'Submit monthly expense report', 'Review customer feedback log', 'Update employee handbook copies',
-            'Inspect safety equipment',
+            'Update product price tags', 'Train new team member on POS system', 'Submit monthly expense report',
         ];
         $priorities = ['low', 'medium', 'high'];
         $statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
         $companyId = OrganizationSeeder::$companyId;
 
-        $sample = collect(StaffSeeder::$employeeIds)->random(20);
-        foreach ($sample as $i => $employeeId) {
+        foreach (StaffSeeder::$employeeIds as $i => $employeeId) {
             $status = $statuses[$i % count($statuses)];
             DB::table('tasks')->insert([
-                'company_id' => $companyId,
-                'employee_user_id' => $employeeId,
+                'company_id' => $companyId, 'employee_user_id' => $employeeId,
                 'supervisor_user_id' => StaffSeeder::$employeeSupervisor[$employeeId],
                 'title' => $titles[$i % count($titles)],
                 'description' => 'Please complete this task before the due date and report back.',
-                'type' => 'ad_hoc',
-                'priority' => $priorities[$i % 3],
-                'due_date' => Carbon::now()->addDays(rand(-10, 14)),
-                'status' => $status,
+                'type' => 'ad_hoc', 'priority' => $priorities[$i % 3],
+                'due_date' => Carbon::now()->addDays(rand(-10, 14)), 'status' => $status,
                 'completed_at' => $status === 'completed' ? now() : null,
                 'created_at' => now(), 'updated_at' => now(),
             ]);

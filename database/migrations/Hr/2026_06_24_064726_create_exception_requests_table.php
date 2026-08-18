@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('attachment')->nullable(); // مرفق (مثل تقرير طبي لتأخير)
             
             // مسار الاعتماد (Approval Workflow)
-            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled' ])->default('pending');
             $table->foreignId('approver_id')->nullable()->constrained('users')->nullOnDelete(); // من وافق/رفض
             $table->timestamp('approved_at')->nullable(); // تاريخ الاعتماد
             $table->text('rejection_reason')->nullable(); // سبب الرفض

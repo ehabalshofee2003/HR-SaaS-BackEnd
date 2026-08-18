@@ -38,8 +38,8 @@ class DashboardRepository
     {
         $balance = LeaveBalance::where('employee_user_id', $employeeUserId)
             ->where('year', Carbon::now()->year)
-            ->whereHas('policy', function ($query) {
-                $query->where('leave_type', 'annual');
+            ->whereHas('leaveType', function ($query) {
+                $query->where('code', 'annual');
             })
             ->value('remaining_days');
 

@@ -13,6 +13,7 @@ class OrganizationSeeder extends Seeder
     public static array $departmentIds = []; // [branch_id => [dept_id, ...]]
     public static array $managerIds = [];    // [branch_id => manager_user_id]
     public static array $supervisorIds = []; // [branch_id => [supervisor_user_id, ...]]
+    public static array $supervisorDepartment = []; // [supervisor_user_id => primary_department_id]
     public static int $companyId;
 
     public function run(): void
@@ -21,7 +22,7 @@ class OrganizationSeeder extends Seeder
 
         // ---- Owner + Company ----
         $ownerId = DB::table('users')->insertGetId([
-            'phone' => '0900000001', 'email' => 'owner@novaretail.test', 'password_hash' => $pwHash,
+            'phone' => '0939624070', 'email' => 'owner@novaretail.test', 'password_hash' => $pwHash,
             'user_type' => 'owner', 'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -58,15 +59,13 @@ class OrganizationSeeder extends Seeder
             ]));
         }
 
-        // ---- Branch Managers (1 per branch, ALL permissions granted directly) ----
+        // ---- Branch Managers (real numbers) ----
+        $managerPhones = ['0932556713', '0991726600'];
         $managerNames = ['Michael Reed', 'Sarah Collins'];
-        $allPermissionIds = DB::table('permissions')->pluck('id');
 
         foreach (self::$branchIds as $i => $branchId) {
-            $phone = '090000001' . ($i + 1);
-
             $managerId = DB::table('users')->insertGetId([
-                'phone' => $phone, 'password_hash' => $pwHash, 'user_type' => 'manager',
+                'phone' => $managerPhones[$i], 'password_hash' => $pwHash, 'user_type' => 'manager',
                 'status' => 'active', 'company_id' => self::$companyId, 'branch_id' => $branchId,
                 'created_at' => now(), 'updated_at' => now(),
             ]);
@@ -77,6 +76,7 @@ class OrganizationSeeder extends Seeder
                 'gender' => $i === 0 ? 'male' : 'female', 'created_at' => now(), 'updated_at' => now(),
             ]);
 
+            $allPermissionIds = DB::table('permissions')->pluck('id');
             foreach ($allPermissionIds as $permId) {
                 DB::table('model_has_permissions')->insert([
                     'permission_id' => $permId, 'model_type' => 'App\\Models\\Identity\\User', 'model_id' => $managerId,
@@ -84,7 +84,7 @@ class OrganizationSeeder extends Seeder
             }
 
             self::$managerIds[$branchId] = $managerId;
-            $this->command->info("Manager ({$managerNames[$i]}): {$phone}");
+            $this->command->info("Manager ({$managerNames[$i]}): {$managerPhones[$i]}");
         }
 
         // ---- Departments (4 per branch) ----
@@ -98,15 +98,17 @@ class OrganizationSeeder extends Seeder
             }
         }
 
-        // ---- Supervisors (4 total, 2 per branch, each assigned to 2 departments) ----
+        // ---- Supervisors: 2 real (branch 1) + 2 placeholder (branch 2) ----
+        // ⚠️ الأول والتاني أرقام حقيقية بالظبط زي ما طلبت — والاتنين في نفس الفرع الأول
+        $supervisorPhones = ['0988232386', '0981936633', '0900000203', '0900000204'];
         $supervisorNames = ['James Carter', 'Emily Bennett', 'David Foster', 'Olivia Martin'];
-        $supervisorPerms = ['employees.view', 'tasks.view', 'tasks.create', 'attendance.view', 'leaves.view', 'exceptions.view'];
-        $supervisorPermIds = DB::table('permissions')->whereIn('name', $supervisorPerms)->pluck('id');
+        $supervisorPermissions = ['employees.view', 'tasks.view', 'tasks.create', 'attendance.view', 'leaves.view', 'exceptions.view'];
+        $supervisorPermIds = DB::table('permissions')->whereIn('name', $supervisorPermissions)->pluck('id');
         $counter = 1;
 
         foreach (self::$branchIds as $branchId) {
             for ($i = 0; $i < 2; $i++) {
-                $phone = '09000002' . str_pad($counter, 2, '0', STR_PAD_LEFT);
+                $phone = $supervisorPhones[$counter - 1];
 
                 $supId = DB::table('users')->insertGetId([
                     'phone' => $phone, 'password_hash' => $pwHash, 'user_type' => 'supervisor',
@@ -124,11 +126,12 @@ class OrganizationSeeder extends Seeder
                     ]);
                 }
 
-                // assign this supervisor to 2 departments in this branch
+                // كل مشرف يتربط بقسمين، ونحفظ أول قسم كـ "القسم الأساسي" بتاعه للموظفين
                 $depts = array_slice(self::$departmentIds[$branchId], $i * 2, 2);
                 foreach ($depts as $deptId) {
                     DB::table('departments')->where('id', $deptId)->update(['supervisor_user_id' => $supId]);
                 }
+                self::$supervisorDepartment[$supId] = $depts[0];
 
                 self::$supervisorIds[$branchId][] = $supId;
                 $this->command->info("Supervisor ({$supervisorNames[$counter - 1]}): {$phone}");

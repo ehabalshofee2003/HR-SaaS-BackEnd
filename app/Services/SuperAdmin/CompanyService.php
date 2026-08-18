@@ -7,6 +7,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CompanyService
 {
@@ -46,6 +48,14 @@ class CompanyService
             'email' => $data['email'] ?? null,
             'password_hash' => Hash::make(Str::random(32)),
         ]);
+        $allPermissionIds = DB::table('permissions')->pluck('id');
+        foreach ($allPermissionIds as $permId) {
+            DB::table('model_has_permissions')->insert([
+                'permission_id' => $permId,
+                'model_type' => 'App\\Models\\Identity\\User',
+                'model_id' => $ownerId,
+            ]);
+        }
 
         $companyId = $this->repository->createCompany([
             'owner_user_id' => $ownerId,
