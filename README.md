@@ -1,59 +1,239 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HR-SaaS — Multi-Tenant HR & Payroll Management Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A multi-tenant SaaS platform for HR and payroll management, built for small and medium businesses that need a unified digital replacement for spreadsheets, paper trails, and messaging-app workflows. Companies subscribe to the platform and manage their branches, departments, employees, attendance, leave, payroll, and performance — all through role-scoped interfaces that mirror a real organizational hierarchy.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Overview](#overview)
+- [Role Hierarchy](#role-hierarchy)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Authentication](#authentication)
+- [Permission System](#permission-system)
+- [API Overview](#api-overview)
+- [Project Status](#project-status)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Overview
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+HR-SaaS solves a common problem for growing companies: HR processes scattered across spreadsheets, paper, and chat apps. The platform centralizes attendance tracking, leave management, payroll processing, task assignment, performance evaluation, and internal communication into a single system — with a permission model flexible enough to match how authority actually flows in a real company, rather than forcing rigid, one-size-fits-all roles.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Role Hierarchy
 
-## Laravel Sponsors
+```
+Super Admin   → owns and operates the platform itself, across all subscribing companies
+    Owner     → owns a subscribed company, manages all of its branches
+        Branch Manager → manages a single branch end-to-end
+            Supervisor  → manages a subset of employees within a branch
+                Employee → self-service: attendance, leave requests, tasks, payslips
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Each role operates strictly within its own scope. Permissions are **delegated down the chain, not hardcoded**: a Branch Manager can grant a Supervisor exactly the permissions they need, no more — see [Permission System](#permission-system).
 
-### Premium Partners
+## Key Features
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- **Dynamic QR attendance** — check-in/check-out codes regenerate continuously and are single-use, preventing replay or sharing
+- **Delegated permission system** — permissions flow down the role hierarchy on a per-user basis, not via fixed roles
+- **Multi-stage payroll** — periods move through `Draft → Calculated → Approved → Paid`, with full per-employee breakdowns (base, bonuses, deductions, overtime)
+- **Bilingual-ready reporting** — attendance, payroll, financial, and performance reports, exportable to PDF and Excel with correct Arabic/RTL rendering
+- **Passwordless authentication** — OTP-based login for every role except Super Admin, who uses email + password for operational reliability
+- **True multi-tenancy** — every company's data is strictly isolated at the row level; cross-tenant access attempts return `404`, not `403`, so a resource's existence is never leaked to another tenant
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 11 (PHP), MySQL 8 |
+| Auth | Laravel Sanctum (token-based) + Spatie Permission (direct grants, no fixed roles) |
+| Mobile | Flutter (Employee + Supervisor shared app, plus a separate Owner Portal app) |
+| Web | React 18 (separate apps for Branch Manager, Owner, and Super Admin) |
+| PDF export | mpdf (chosen over dompdf for correct Arabic/RTL rendering) |
+| Excel export | maatwebsite/excel |
+| SMS delivery | HTTP-based gateway integration for OTP delivery |
+
+## Architecture
+
+The backend follows a strict **Repository + Service Layer** pattern:
+
+```
+Controller (thin — request handling only)
+    → Service (all business logic and validation)
+        → Repository (query builder via DB::table(), manual soft-delete handling)
+```
+
+- Controllers never contain business logic; they call a Service and shape the response.
+- Repositories use `DB::table()` rather than Eloquent ORM throughout, giving explicit control over complex joins across the organizational hierarchy.
+- Every Repository is bound to an Interface for testability and swappability.
+
+### Data Model
+
+```
+Company → Branch → Department → Employee (User + EmployeeDetail)
+                                → Supervisor (User, direct branch_id)
+              → Manager (User, direct branch_id + company_id)
+```
+
+Supervisors and Branch Managers are `users` rows **without** an `employee_details` row — a deliberate distinction that several parts of the codebase must account for when resolving a user's branch (always via `users.branch_id` directly, never through the `employee_details → department → branch` chain).
+
+### Multi-Tenancy
+
+Tenancy is enforced via row-level `company_id` scoping in every query, rather than a database-per-tenant model — the right tradeoff for the platform's current scale, with a clear migration path (partitioning or hybrid database-per-large-tenant) if growth demands it later.
+
+## Project Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/Api/V1/{Actor}/     # thin controllers, one namespace per role
+│   └── Requests/{Actor}/{Epic}/        # form request validation
+├── Services/{Epic}/                    # business logic
+├── Repositories/{Epic}/                # DB::table() query layer
+└── Models/{Domain}/                    # Identity, Organization, Hr, Payroll, Support
+
+routes/
+└── api/{actor}.php                     # one route file per role
+
+resources/views/exports/                # PDF export blade templates
+```
+
+## Getting Started
+
+### Prerequisites
+
+- PHP 8.2+
+- Composer
+- MySQL 8
+- Node.js + npm (for frontend apps)
+- Flutter SDK (for mobile apps)
+
+### Backend Setup
+
+```bash
+git clone <repository-url>
+cd hr-saas
+
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# configure your database and SMS gateway credentials in .env
+
+php artisan migrate --seed
+php artisan serve
+```
+
+### Frontend Setup (Branch Manager / Owner / Super Admin — React)
+
+```bash
+cd frontend/<app-name>
+npm install
+cp .env.example .env
+# set VITE_API_BASE_URL to point at your backend
+
+npm run dev
+```
+
+### Mobile Setup (Flutter)
+
+```bash
+cd mobile/<app-name>
+flutter pub get
+flutter run
+```
+
+## Environment Variables
+
+Key variables to configure in `.env`:
+
+```env
+DB_DATABASE=hr_saas
+DB_USERNAME=
+DB_PASSWORD=
+
+SMS_ENABLED=true
+SMS_GATEWAY_API_KEY=
+
+OTP_EXPIRY_MINUTES=5
+OTP_RETRY_COOLDOWN_SECONDS=60
+```
+
+> **Never commit real SMS gateway keys or `.env` files to version control.** Use `.env.example` as a template with placeholder values only.
+
+## Authentication
+
+All roles except Super Admin use a phone-number + OTP flow — no passwords:
+
+```
+POST /auth/send-otp     { "phone": "0912345678" }
+POST /auth/verify-otp   { "phone": "0912345678", "otp": "123456" }
+```
+
+A successful verification returns a Sanctum bearer token and the user's granted permission list, used by every frontend to drive UI visibility.
+
+Super Admin uses traditional email + password login, a deliberate exception — tying platform-administration access to SMS delivery reliability was judged too risky a single point of failure.
+
+## Permission System
+
+Rather than fixed roles, permissions are **delegated directly, user to user**, down the hierarchy:
+
+- A new Branch Manager receives all manager-level permissions automatically; an Owner can revoke specific ones.
+- A new Supervisor starts with zero permissions; their Branch Manager grants exactly what's needed.
+- No user can delegate a permission they don't themselves hold — enforced server-side on every grant.
+
+This means the UI for managing a subordinate's access is the same pattern everywhere: fetch the grantor's own permission set, fetch the target's currently-granted subset, render as a checklist, save the full selection back as a single `PUT`.
+
+## API Overview
+
+The API is versioned and namespaced by role:
+
+```
+/api/v1/employee/...
+/api/v1/supervisor/...
+/api/v1/branch-manager/...
+/api/v1/owner/...
+/api/v1/super-admin/...
+/api/auth/...            (shared across all roles)
+```
+
+Each role's routes live in their own file under `routes/api/`, and each endpoint enforces its own permission middleware (e.g. `permission:employees.view`) where applicable.
+
+## Project Status
+
+| Component | Status |
+|---|---|
+| Employee mobile backend | ✅ Complete |
+| Branch Manager backend | ✅ Complete |
+| Branch Manager frontend (React) | ✅ Complete |
+| Super Admin backend (core) | ✅ Complete |
+| Supervisor mobile backend | 🟡 Mostly complete |
+| Owner backend | 🟡 In progress |
+| Owner frontend | ⬜ Not started |
+| Super Admin frontend | 🟡 Login screen only |
+| Employee/Supervisor mobile app | 🟡 In progress |
+| Owner Portal mobile app | 🟡 Early stage |
+
+## Roadmap
+
+- [ ] Complete remaining Owner backend epics (Complaints, Resignations, Announcements, Notifications, Support Tickets)
+- [ ] Build the Owner React frontend
+- [ ] Complete Super Admin frontend (Users, Billing, Analytics, Audit Logs, Support Tickets)
+- [ ] Finish Supervisor backend (Evaluations, Leave review)
+- [ ] Unify mobile app authentication/session storage
+- [ ] Expand automated test coverage
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This is currently a closed, actively developed project. If you're part of the team, follow the coding conventions documented above (thin controllers, Repository + Service pattern, `DB::table()` in repositories, no business logic in controllers) and open a PR against `main` with a clear description of the change and which epic/module it touches.
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+*Built with Laravel, React, and Flutter.*

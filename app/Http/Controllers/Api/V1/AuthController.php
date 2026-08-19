@@ -18,85 +18,40 @@ class AuthController extends Controller
         private OtpService $otpService,
     ) {}
 
-    public function sendOtp(SendOtpRequest $request): JsonResponse
-    {
-        $result = $this->otpService->sendOtp($request->validated()['phone']);
-
-        return response()->json([
-            'success' => $result['success'],
-            'message' => $result['message'],
-            'data' => $result['data'] ?? null,
-            'retry_after' => $result['retry_after'] ?? null,
-        ], $result['code']);
-    }
-
-    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        $result = $this->otpService->verifyOtp(
-            $data['phone'],
-            $data['otp'],
-            $data['device_id'] ?? null,
-            $data['device_name'] ?? null,
-        );
-
-        if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-                'retry_after' => $result['retry_after'] ?? null,
-                'remaining_attempts' => $result['remaining_attempts'] ?? null,
-            ], $result['code']);
-        }
-
-        return response()->json(new LoginResource($result));
-    }
-public function requestPhoneChange(RequestPhoneChangeRequest $request): JsonResponse
+public function sendOtp(Request $request): JsonResponse
 {
-    $userId = \Illuminate\Support\Facades\Auth::id();
+    $request->validate([
+        'contacts' => ['required', 'string'],
+        'sms_type' => ['required', 'string'],
+        'message' => ['nullable', 'string'],
+    ]);
 
-    if (!$userId) {
-        return response()->json(['success' => false, 'message' => 'غير مصرح.'], 401);
-    }
+    $result = $this->otpService->sendOtp(
+        $request->query('contacts'),
+        $request->query('sms_type'),
+        $request->query('message')
+    );
 
-    $user = \App\Models\Identity\User::find($userId);
-
-    if (!$user) {
-        return response()->json(['success' => false, 'message' => 'غير مصرح.'], 401);
-    }
-
-    $result = $this->otpService->sendPhoneChangeOtp($user, $request->validated()['new_phone']);
-
-    return response()->json([
-        'success' => $result['success'],
-        'message' => $result['message'],
-        'data' => $result['data'] ?? null,
-        'retry_after' => $result['retry_after'] ?? null,
-    ], $result['code']);
+    return response()->json($result, $result['code'] ?? ($result['success'] ? 200 : 422));
 }
 
-public function verifyPhoneChange(VerifyPhoneChangeRequest $request): JsonResponse
+public function verifyOtp(Request $request): JsonResponse
 {
-    $userId = \Illuminate\Support\Facades\Auth::id();
+    $request->validate([
+        'phone' => ['required', 'string'],
+        'otp' => ['required', 'string'],
+    ]);
 
-    if (!$userId) {
-        return response()->json(['success' => false, 'message' => 'غير مصرح.'], 401);
-    }
+    $result = $this->otpService->verifyOtp(
+        $request->input('phone'),
+        $request->input('otp')
+    );
 
-    $user = \App\Models\Identity\User::find($userId);
-
-    if (!$user) {
-        return response()->json(['success' => false, 'message' => 'غير مصرح.'], 401);
-    }
-
-    $data = $request->validated();
-    $result = $this->otpService->verifyPhoneChangeOtp($user, $data['new_phone'], $data['otp']);
-
-    return response()->json([
-        'success' => $result['success'],
-        'message' => $result['message'],
-    ], $result['code']);
+    return response()->json($result, $result['code'] ?? ($result['success'] ? 200 : 422));
 }
+
+
+ 
 
     public function logout(Request $request): JsonResponse
     {
